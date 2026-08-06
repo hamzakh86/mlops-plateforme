@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-inference-deployment
+  namespace: default
+  labels:
+    app: ml-inference
+    version: "2.0.0"
+    component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ml-inference
+  # Stratégie de mise à jour : zéro temps d'arrêt (rolling update)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ml-inference
+    spec:
+      containers:
+      - name: ml-inference-container
+        image: ml-inference-api:latest
+        imagePullPolicy: Never  # Image locale (Minikube / Docker Desktop)
+        ports:
+        - containerPort: 8000
+          name: http
+        # Lecture des variables de configuration depuis le ConfigMap
+        envFrom:
+        - configMapRef:
+            name: ml-inference-config
+        # Probe de démarrage : laisse le temps au modèle d'être chargé
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          failureThreshold: 10
+          periodSeconds: 5
+        # Probe de vivacité : redémarre le pod si l'API ne répond plus
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 15
+          failureThreshold: 3
+        # Probe de disponibilité : retire le pod du LoadBalancer s'il est surchargé
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        # Limites de ressources : garantir la qualité de service
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

@@ -1,65 +1,169 @@
 # 🚀 Plateforme MLOps pour Déploiement IA
 
-Bienvenue dans le dépôt principal du projet de stage **Plateforme MLOps**. Ce projet vise à construire une infrastructure complète permettant l'entraînement, le suivi, l'empaquetage (Docker), et le déploiement (Kubernetes) de modèles de Machine Learning.
+> Projet de Stage — **ITGate Group**
+> Construction d'une plateforme complète d'entraînement, de suivi, de conteneurisation et de déploiement de modèles de Machine Learning.
 
-## 🎯 Architecture - Semaine 1 (Socle ML)
-La première phase du projet consiste à établir les fondations du cycle de vie MLOps :
-- **Python & venv** : Isolation des dépendances.
-- **Git** : Versionnement du code source.
-- **Scikit-Learn** : Création du modèle d'Intelligence Artificielle (PoC : Classification Iris).
-- **MLflow Tracking** : Enregistrement centralisé des hyperparamètres, des métriques de performance, et des artefacts (fichiers du modèle).
+---
+
+## 🗺️ Roadmap du Projet
+
+| Semaine | Thème | Statut |
+|---|---|---|
+| **Semaine 1** | Cadrage, environnement, MLflow, premier entraînement | ✅ Terminé |
+| **Semaine 2** | Docker, Kubernetes local, API d'inférence FastAPI | ✅ Terminé |
+| Semaine 3 | Monitoring (Prometheus / Grafana), CI/CD | 🔜 À venir |
+| Semaine 4 | Système RAG, Extraction intelligente, API IA avancée | 🔜 À venir |
+
+---
+
+## 🏗️ Architecture du Projet
+
+```
+Platforme MLOps/
+│
+├── src/
+│   ├── train.py          # Pipeline d'entraînement ML + MLflow Tracking
+│   └── serve.py          # API d'inférence FastAPI (Serveur de prédictions)
+│
+├── k8s/
+│   ├── configmap.yaml    # Variables de configuration Kubernetes
+│   ├── deployment.yaml   # Déploiement des pods de l'API
+│   ├── service.yaml      # Exposition réseau de l'API (LoadBalancer)
+│   └── hpa.yaml          # Auto-Scaling automatique (2 à 8 répliques)
+│
+├── Dockerfile            # Recette de construction de l'image Docker (multi-stage)
+├── .dockerignore         # Fichiers exclus de l'image Docker
+├── .env.example          # Modèle de configuration des variables d'environnement
+├── Makefile              # Raccourcis de commandes (train, serve, docker, k8s)
+├── requirements.txt      # Dépendances Python
+└── README.md             # Ce fichier
+```
 
 ---
 
 ## 🛠️ Installation et Configuration
 
-### 1. Prérequis
-- Python 3.11+ installé sur votre machine.
-- Git.
+### Prérequis
+- Python **3.11+**
+- Git
+- Docker Desktop (pour la Semaine 2)
+- Kubernetes activé dans Docker Desktop (pour la Semaine 2)
 
-### 2. Création de l'environnement virtuel
-Ouvrez un terminal (PowerShell) à la racine du projet et exécutez :
+### 1. Cloner le dépôt
 ```powershell
-# Création de l'environnement
-python -m venv venv
+git clone <url-de-votre-repo>
+cd "Platforme MLOps"
+```
 
-# Activation (Windows PowerShell)
+### 2. Créer et activer l'environnement virtuel Python
+```powershell
+python -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
 
-### 3. Installation des dépendances
-Une fois l'environnement activé, installez les bibliothèques requises :
+### 3. Installer les dépendances
 ```powershell
 pip install -r requirements.txt
 ```
 
+### 4. Configurer les variables d'environnement (optionnel)
+```powershell
+copy .env.example .env
+# Éditez .env selon vos besoins
+```
+
 ---
 
-## 🧠 Exécution de l'Entraînement
+## 🧠 Semaine 1 — Entraînement & MLflow Tracking
 
-Pour simuler le travail d'un Data Scientist et entraîner le modèle, exécutez le script principal :
+### Lancer un entraînement
 ```powershell
+# Avec les paramètres par défaut (100 arbres)
 python src/train.py
+
+# Avec des hyperparamètres personnalisés
+python src/train.py --n_estimators 200 --max_depth 5 --run_name "RF_n200_d5"
 ```
 
-Vous pouvez également modifier les hyperparamètres du modèle en ligne de commande :
-```powershell
-python src/train.py --n_estimators 150 --max_depth 5
-```
-*Le script est structuré selon les standards de l'industrie (Type Hinting, Logging, Docstrings) et gère automatiquement l'injection des données vers la base MLflow.*
+**Arguments disponibles :**
 
----
+| Argument | Type | Défaut | Description |
+|---|---|---|---|
+| `--n_estimators` | int | 100 | Nombre d'arbres dans la forêt |
+| `--max_depth` | int | None | Profondeur maximale de l'arbre |
+| `--run_name` | str | "RandomForest_Iris" | Nom du Run dans MLflow |
 
-## 📊 Visualisation des Résultats (MLflow UI)
-
-MLflow enregistre toutes les expériences dans une base de données locale (`mlflow.db`). Pour visualiser les résultats et comparer les différents entraînements, lancez le serveur UI :
-
+### Visualiser les résultats (MLflow UI)
 ```powershell
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
-Ouvrez ensuite votre navigateur à l'adresse suivante : **http://127.0.0.1:5000**
+Ouvrez **http://127.0.0.1:5000** dans votre navigateur.
 
-Vous y trouverez l'expérience `Iris_Classification` contenant :
-- Les paramètres utilisés (`n_estimators`, `max_depth`).
-- Les métriques calculées (`accuracy`, `precision`, `recall`, `f1_score`).
-- Le modèle sérialisé et prêt à être déployé (Semaine 2).
+---
+
+## 🐋 Semaine 2 — API, Docker & Kubernetes
+
+### Démarrer l'API d'inférence en local
+```powershell
+uvicorn src.serve:app --host 127.0.0.1 --port 8000 --reload
+```
+- **Swagger UI** (documentation interactive) → **http://127.0.0.1:8000/docs**
+- **Health check** → **http://127.0.0.1:8000/health**
+
+### Exemple de requête de prédiction
+```bash
+curl -X POST "http://127.0.0.1:8000/predict" \
+  -H "Content-Type: application/json" \
+  -d '{"data": [{"sepal_length": 5.1, "sepal_width": 3.5, "petal_length": 1.4, "petal_width": 0.2}]}'
+```
+
+**Réponse attendue :**
+```json
+{
+  "predictions": ["setosa"],
+  "model_run_id": "dbbbd02ee924...",
+  "duration_ms": 1.24
+}
+```
+
+### Construire et exécuter avec Docker
+```powershell
+# Construire l'image (multi-stage build)
+docker build -t ml-inference-api:latest .
+
+# Lancer un conteneur
+docker run -p 8000:8000 --name ml-api ml-inference-api:latest
+
+# Vérifier que l'API répond
+curl http://localhost:8000/health
+```
+
+### Déployer sur Kubernetes (local)
+```powershell
+# Appliquer tous les manifestes dans l'ordre
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/hpa.yaml
+
+# Vérifier l'état du déploiement
+kubectl get pods,svc,hpa -l app=ml-inference
+```
+
+---
+
+## 📦 Stack Technologique
+
+| Couche | Technologie | Rôle |
+|---|---|---|
+| Machine Learning | Scikit-Learn | Création et évaluation du modèle |
+| Tracking | MLflow | Historisation des expériences |
+| API | FastAPI + Uvicorn | Serveur d'inférence web |
+| Conteneurisation | Docker | Empaquetage de l'application |
+| Orchestration | Kubernetes | Déploiement, scaling, résilience |
+| Monitoring | Prometheus + Grafana | *(Semaine 3)* |
+
+---
+
+## 👤 Auteur
+Projet de stage réalisé à **ITGate Group**. www.itgate-group.com

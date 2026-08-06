@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-inference-config
+  namespace: default
+  labels:
+    app: ml-inference
+data:
+  # Variables d'environnement lues par src/serve.py
+  MLFLOW_TRACKING_URI: "sqlite:///mlflow.db"
+  MLFLOW_EXPERIMENT_NAME: "Iris_Classification"
+  MODEL_ARTIFACT_PATH: "random_forest_model"
