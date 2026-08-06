@@ -143,3 +143,29 @@ def predict(request: PredictRequest, req: Request):
         model_run_id = _model_info.get("run_id", "inconnu"),
         duration_ms  = round(duration_ms, 2),
     )
+
+# ─── Endpoints de la Phase 2 (En cours de développement) ───────────────────────
+
+@app.post("/extract", tags=["Extraction"])
+async def extract_document():
+    """
+    [WIP] Endpoint pour l'extraction intelligente de documents.
+    À implémenter dans la Phase 12 (LayoutLM, Donut, etc.).
+    """
+    return {"status": "En cours de développement", "phase": "12"}
+
+@app.post("/classify", tags=["Classification"])
+async def classify_document():
+    """
+    [WIP] Endpoint pour la classification de documents (Invoice, Resume, etc.).
+    À implémenter dans la Phase 13 (BERT, RoBERTa).
+    """
+    return {"status": "En cours de développement", "phase": "13"}
+
+@app.post("/ask", tags=["RAG"])
+async def ask_question():
+    """
+    [WIP] Endpoint pour le système RAG (Retrieval-Augmented Generation).
+    À implémenter dans la Phase 14 (LangChain, FAISS, LLM).
+    """
+    return {"status": "En cours de développement", "phase": "14"}
