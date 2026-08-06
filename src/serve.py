@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # ─── Logger ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -93,6 +94,9 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan,
 )
+
+# ─── Monitoring Prometheus ─────────────────────────────────────────────────────
+Instrumentator().instrument(app).expose(app)
 
 # CORS : autorise l'accès depuis le futur frontend web (Semaine 3)
 app.add_middleware(
