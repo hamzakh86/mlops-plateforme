@@ -67,6 +67,16 @@ k8s-status:  ## Affiche l'état du déploiement Kubernetes
 k8s-delete:  ## Supprime le déploiement Kubernetes
 	kubectl delete -f k8s/
 
+# ── RAG (Local) ─────────────────────────────────────────────
+.PHONY: train-rag
+train-rag:  ## Lance l'ingestion des documents pour le système RAG
+	$(PYTHON) src/train_rag.py --run-name "RAG_Local_Ingestion"
+
+# ── Tests & Qualité ─────────────────────────────────────────
+.PHONY: test
+test:  ## Lance tous les tests unitaires et d'intégration
+	venv/Scripts/pytest tests/ -v
+
 # ── Utilitaires ─────────────────────────────────────────────
 .PHONY: help
 help:  ## Affiche cette aide

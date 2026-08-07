@@ -11,8 +11,8 @@
 |---|---|---|
 | **Semaine 1** | Cadrage, environnement, MLflow, premier entraînement | ✅ Terminé |
 | **Semaine 2** | Docker, Kubernetes local, API d'inférence FastAPI | ✅ Terminé |
-| Semaine 3 | Monitoring (Prometheus / Grafana), CI/CD | 🔜 À venir |
-| Semaine 4 | Système RAG, Extraction intelligente, API IA avancée | 🔜 À venir |
+| **Semaine 3** | Système RAG Local (Ollama + Sentence-Transformers) | ✅ En cours |
+| Semaine 4 | Monitoring (Prometheus / Grafana), CI/CD | 🔜 À venir |
 
 ---
 
@@ -161,7 +161,32 @@ kubectl get pods,svc,hpa -l app=ml-inference
 | API | FastAPI + Uvicorn | Serveur d'inférence web |
 | Conteneurisation | Docker | Empaquetage de l'application |
 | Orchestration | Kubernetes | Déploiement, scaling, résilience |
-| Monitoring | Prometheus + Grafana | *(Semaine 3)* |
+| IA / RAG | Ollama + FAISS | Modèle LLM local et Vector Store |
+| Monitoring | Prometheus + Grafana | *(Semaine 4)* |
+
+---
+
+## 🤖 Semaine 3 — Système RAG (Retrieval-Augmented Generation)
+
+La plateforme intègre un système de questions/réponses documentaire basé sur vos propres données, fonctionnant **100% en local** (aucune clé API requise).
+
+### 1. Ingestion des documents (Création de l'index FAISS)
+Placez vos documents `.txt` dans le dossier `data/raw/` puis lancez :
+```powershell
+make train-rag
+# ou
+python src/train_rag.py --run-name "RAG_Local_Ingestion"
+```
+Cela va découper les documents, calculer les embeddings (avec `sentence-transformers`) et sauvegarder l'index vectoriel dans MLflow.
+
+### 2. Poser des questions via l'API
+L'API intègre un endpoint `/ask` pour interroger vos documents (assurez-vous qu'Ollama est installé et le modèle `phi3:mini` téléchargé).
+```bash
+curl -X POST "http://127.0.0.1:8000/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Quels sont les horaires de travail de lentreprise ?"}'
+```
+L'API retournera une réponse générée par l'IA locale, ainsi que les sources (fichiers) utilisées pour générer cette réponse.
 
 ---
 

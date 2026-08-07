@@ -1,0 +1,90 @@
+
+RAPPORT INTERNE — ITGate Group
+Document : Politiques et Procédures de l'Entreprise
+Version : 1.0 — Août 2026
+Confidentiel
+
+==========================================================
+1. PRÉSENTATION DE L'ENTREPRISE
+==========================================================
+
+ITGate Group est une entreprise spécialisée dans le développement de solutions
+logicielles innovantes, l'intégration de systèmes d'information et le conseil
+en transformation numérique. Fondée en 2010, l'entreprise compte aujourd'hui
+plus de 200 collaborateurs répartis sur 3 sites : Tunis, Sfax et Paris.
+
+Notre mission est d'accompagner les organisations dans leur transition vers
+le numérique en fournissant des solutions sur mesure, fiables et évolutives.
+
+==========================================================
+2. POLITIQUE DE RESSOURCES HUMAINES
+==========================================================
+
+2.1 Horaires de travail
+Les employés d'ITGate Group travaillent selon un horaire standard de 40 heures
+par semaine, du lundi au vendredi, de 8h30 à 17h30, avec une pause déjeuner
+d'une heure de 12h30 à 13h30.
+
+2.2 Congés annuels
+Chaque employé bénéficie de 24 jours ouvrables de congé annuel payé.
+Les congés doivent être demandés au moins 2 semaines à l'avance et validés
+par le responsable hiérarchique direct.
+
+2.3 Télétravail
+Le télétravail est autorisé jusqu'à 2 jours par semaine pour les postes
+éligibles. Une demande préalable doit être soumise via le portail RH interne.
+
+==========================================================
+3. POLITIQUE INFORMATIQUE ET SÉCURITÉ
+==========================================================
+
+3.1 Utilisation du matériel
+Tout équipement informatique mis à disposition est exclusivement réservé à
+un usage professionnel. L'installation de logiciels non approuvés est interdite.
+
+3.2 Sécurité des données
+Tous les employés sont tenus de respecter la politique RGPD de l'entreprise.
+Les données clients ne doivent jamais être stockées sur des supports personnels.
+Chaque poste de travail doit être verrouillé en cas d'absence, même brève.
+
+3.3 Mots de passe
+Les mots de passe doivent contenir au minimum 12 caractères, incluant une
+majuscule, un chiffre et un caractère spécial. Ils doivent être renouvelés
+tous les 3 mois.
+
+==========================================================
+4. PROJETS EN COURS
+==========================================================
+
+4.1 Plateforme MLOps (Stagiaires 2026)
+Ce projet vise à construire une plateforme complète pour le déploiement de
+modèles de Machine Learning. La plateforme utilise MLflow pour le tracking
+des expériences, FastAPI pour l'API d'inférence, Docker pour la
+conteneurisation et Kubernetes pour l'orchestration. Le projet intègre
+également un système RAG (Retrieval-Augmented Generation) basé sur Gemini
+pour permettre des recherches intelligentes dans les documents d'entreprise.
+
+4.2 Système de Gestion des Clients (CRM)
+Le projet CRM a pour objectif de moderniser le système de gestion de la
+relation client. Il sera développé en React.js pour le frontend et Node.js
+pour le backend, avec une base de données PostgreSQL.
+
+==========================================================
+5. AVANTAGES SOCIAUX
+==========================================================
+
+- Mutuelle santé prise en charge à 80% par l'entreprise.
+- Tickets restaurant d'une valeur de 8 dinars par jour travaillé.
+- Prime annuelle de performance basée sur les objectifs individuels et collectifs.
+- Formation continue : chaque employé bénéficie d'un budget formation de 1500 DT/an.
+- Salle de sport et espace détente disponibles au siège de Tunis.
+
+==========================================================
+6. CONTACTS UTILES
+==========================================================
+
+Ressources Humaines     : rh@itgate-group.com
+Support Informatique    : it-support@itgate-group.com
+Direction Générale      : direction@itgate-group.com
+Site Web                : www.itgate-group.com
+Téléphone               : +216 71 000 000

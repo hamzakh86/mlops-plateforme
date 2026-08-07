@@ -56,5 +56,23 @@ Ce fichier sert de journal de bord pour tracer l'avancement quotidien du projet 
 
 ---
 
-**Prochaine étape (Jour 7) :**
+**Prochaine étape :**
 - Remplacer le modèle baseline (Iris) par les modèles IA métiers (NLP : Extraction Intelligente, Classification de documents, Système RAG).
+
+---
+
+### Jour 7 — 07/08/2026
+**Résumé de la journée :**
+- **Architecture NLP** : Conception de l'architecture pour le système RAG (Retrieval-Augmented Generation).
+- **Problème d'API Google** : Rencontre d'une erreur d'authentification (`401 UNAUTHENTICATED`) avec les clés OAuth/Gemini.
+- **Pivot vers du 100% Local** : Migration de l'architecture vers une solution locale pour garantir la résilience et l'indépendance de la plateforme.
+- **Ingestion RAG** : Développement du pipeline d'ingestion RAG (`src/train_rag.py`) en utilisant `sentence-transformers` (all-MiniLM-L6-v2) pour les embeddings et FAISS pour l'indexation.
+- **Moteur RAG** : Développement du moteur d'inférence RAG (`src/rag_engine.py`) utilisant le LLM local `phi3:mini` via **Ollama**.
+- **Tests** : Création des tests unitaires et d'intégration (`tests/test_train.py`, `tests/test_api.py`, `tests/test_rag.py`).
+- **Automatisation** : Mise à jour du `Makefile` et du `README.md` pour intégrer les commandes du système RAG.
+
+---
+
+**Prochaine étape :**
+- Développer les fonctionnalités de classification de documents et d'extraction de données structurées.
+- Intégrer la stack de Monitoring (Prometheus + Grafana).
