@@ -9,10 +9,23 @@
 
 | Semaine | Thème | Statut |
 |---|---|---|
-| **Semaine 1** | Cadrage, environnement, MLflow, premier entraînement | ✅ Terminé |
-| **Semaine 2** | Docker, Kubernetes local, API d'inférence FastAPI | ✅ Terminé |
-| **Semaine 3** | Système RAG Local (Ollama + Sentence-Transformers) | ✅ En cours |
-| Semaine 4 | Monitoring (Prometheus / Grafana), CI/CD | 🔜 À venir |
+| **Semaine 1** | Cadrage, environnement, MLflow, FastAPI, Docker, Kubernetes local | ✅ Terminé |
+| **Semaine 2** | Cas IA métiers : RAG local, extraction intelligente, classification de documents | 🔄 En cours |
+| Semaine 3 | Monitoring (Prometheus / Grafana), métriques applicatives, dashboard | 🔜 À venir |
+| Semaine 4 | CI/CD, automatisation du build, tests et déploiement | 🔜 À venir |
+
+### Avancement actuel
+
+Aujourd'hui, **lundi 10/08/2026**, correspond au **Jour 6** du stage.
+
+Le weekend du **08/08/2026** et du **09/08/2026** est compté comme une pause et n'est pas inclus dans les jours de travail.
+
+Statut actuel du Jour 6 : **en cours**. Aucun travail technique n'a encore été réalisé aujourd'hui.
+
+Objectif du Jour 6 :
+- Commencer le développement réel des endpoints métiers `/extract` et `/classify`.
+- Ajouter les tests unitaires et d'intégration associés.
+- Préparer la transition vers le monitoring Prometheus / Grafana.
 
 ---
 
@@ -23,13 +36,21 @@ Platforme MLOps/
 │
 ├── src/
 │   ├── train.py          # Pipeline d'entraînement ML + MLflow Tracking
-│   └── serve.py          # API d'inférence FastAPI (Serveur de prédictions)
+│   ├── train_rag.py      # Pipeline d'ingestion RAG + index FAISS
+│   ├── rag_engine.py     # Moteur RAG local avec Ollama
+│   ├── nlp_engine.py     # Classification et extraction de documents
+│   └── serve.py          # API FastAPI : prédiction, RAG, extraction, classification
 │
 ├── k8s/
 │   ├── configmap.yaml    # Variables de configuration Kubernetes
 │   ├── deployment.yaml   # Déploiement des pods de l'API
 │   ├── service.yaml      # Exposition réseau de l'API (LoadBalancer)
 │   └── hpa.yaml          # Auto-Scaling automatique (2 à 8 répliques)
+│
+├── tests/                # Tests unitaires et tests API
+├── data/
+│   ├── raw/              # Documents bruts pour le RAG
+│   └── processed/        # Index FAISS généré
 │
 ├── Dockerfile            # Recette de construction de l'image Docker (multi-stage)
 ├── .dockerignore         # Fichiers exclus de l'image Docker
@@ -46,8 +67,8 @@ Platforme MLOps/
 ### Prérequis
 - Python **3.11+**
 - Git
-- Docker Desktop (pour la Semaine 2)
-- Kubernetes activé dans Docker Desktop (pour la Semaine 2)
+- Docker Desktop
+- Kubernetes activé dans Docker Desktop
 
 ### 1. Cloner le dépôt
 ```powershell
@@ -162,11 +183,11 @@ kubectl get pods,svc,hpa -l app=ml-inference
 | Conteneurisation | Docker | Empaquetage de l'application |
 | Orchestration | Kubernetes | Déploiement, scaling, résilience |
 | IA / RAG | Ollama + FAISS | Modèle LLM local et Vector Store |
-| Monitoring | Prometheus + Grafana | *(Semaine 4)* |
+| Monitoring | Prometheus + Grafana | *(Semaine 3)* |
 
 ---
 
-## 🤖 Semaine 3 — Système RAG (Retrieval-Augmented Generation)
+## 🤖 Semaine 2 — Système RAG (Retrieval-Augmented Generation)
 
 La plateforme intègre un système de questions/réponses documentaire basé sur vos propres données, fonctionnant **100% en local** (aucune clé API requise).
 
@@ -187,6 +208,53 @@ curl -X POST "http://127.0.0.1:8000/ask" \
   -d '{"question": "Quels sont les horaires de travail de lentreprise ?"}'
 ```
 L'API retournera une réponse générée par l'IA locale, ainsi que les sources (fichiers) utilisées pour générer cette réponse.
+
+---
+
+## 🧾 IA Métier — Extraction et Classification
+
+La plateforme prépare également deux endpoints métiers pour traiter des documents texte :
+
+| Endpoint | Rôle |
+|---|---|
+| `POST /extract` | Extraire des informations structurées d'un document |
+| `POST /classify` | Classifier un document parmi des catégories données |
+
+### Exemple : extraction intelligente
+
+```bash
+curl -X POST "http://127.0.0.1:8000/extract" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Facture ITGate Group du 10/08/2026. Montant total: 1250.50 TND."}'
+```
+
+**Réponse attendue :**
+```json
+{
+  "extracted_data": {
+    "montant_total": 1250.5,
+    "date": "2026-08-10",
+    "fournisseur": "ITGate Group"
+  },
+  "duration_ms": 950.42
+}
+```
+
+### Exemple : classification de document
+
+```bash
+curl -X POST "http://127.0.0.1:8000/classify" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Facture ITGate Group du 10/08/2026. Montant total: 1250.50 TND.", "categories": ["Facture", "CV", "Contrat", "Rapport"]}'
+```
+
+**Réponse attendue :**
+```json
+{
+  "category": "Facture",
+  "duration_ms": 870.15
+}
+```
 
 ---
 
