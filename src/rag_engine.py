@@ -1,14 +1,14 @@
 """
 src/rag_engine.py
 ──────────────────
-Moteur RAG (Retrieval-Augmented Generation) 100% local.
+Moteur RAG (Retrieval-Augmented Generation).
 
 Utilise :
-  - sentence-transformers (all-MiniLM-L6-v2) pour les embeddings
-  - FAISS (chargé depuis MLflow) pour la recherche de contexte
-  - Ollama (local) pour la génération de réponses
+  - sentence-transformers (all-MiniLM-L6-v2) pour les embeddings (local)
+  - FAISS (chargé depuis MLflow) pour la recherche de contexte (local)
+  - Groq (cloud) pour la génération de réponses
 
-Aucune clé API requise.
+Nécessite une clé API Groq gratuite (voir .env.example).
 """
 
 import logging
@@ -23,7 +23,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_ollama import ChatOllama
+from src.llm_provider import get_llm
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +50,8 @@ def format_docs(docs):
 
 class RAGEngine:
     """
-    Moteur RAG local : charge l'index FAISS depuis MLflow,
-    utilise Ollama pour la génération de réponses.
+    Moteur RAG : charge l'index FAISS depuis MLflow,
+    utilise Groq (cloud) pour la génération de réponses.
     """
 
     def __init__(self):
@@ -59,12 +59,10 @@ class RAGEngine:
         self._retriever = None
         self._run_info: dict = {}
         self._embedding_model = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-        self._ollama_model    = os.getenv("OLLAMA_MODEL", "phi3:mini")
-        self._ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
     def load_from_mlflow(self, tracking_uri: str, experiment_name: str) -> dict:
         """
-        Charge le dernier run RAG depuis MLflow et reconstruit la chaîne Q&A locale.
+        Charge le dernier run RAG depuis MLflow et reconstruit la chaîne Q&A.
         """
         mlflow.set_tracking_uri(tracking_uri)
         client = mlflow.tracking.MlflowClient()
@@ -111,13 +109,8 @@ class RAGEngine:
                 allow_dangerous_deserialization=True,
             )
 
-        # Initialiser Ollama (LLM local)
-        logger.info(f"Connexion à Ollama ({self._ollama_model})...")
-        llm = ChatOllama(
-            model=self._ollama_model,
-            base_url=self._ollama_base_url,
-            temperature=0.2,
-        )
+        # Initialiser le LLM (Groq, cloud)
+        llm = get_llm(temperature=0.2)
 
         self._retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
 
@@ -129,15 +122,18 @@ class RAGEngine:
             | StrOutputParser()
         )
 
+        llm_model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+
         self._run_info = {
             "run_id":            run_id,
             "num_documents":     int(run.data.metrics.get("num_documents", 0)),
             "num_chunks":        int(run.data.metrics.get("num_chunks", 0)),
             "embedding_model":   self._embedding_model,
-            "llm_model":         self._ollama_model,
+            "llm_provider":      "groq",
+            "llm_model":         llm_model,
         }
         logger.info(
-            f"✅ Moteur RAG prêt. LLM={self._ollama_model} | "
+            f"✅ Moteur RAG prêt. Provider=groq | LLM={llm_model} | "
             f"Embeddings={self._embedding_model} | Chunks={self._run_info['num_chunks']}"
         )
         return self._run_info
@@ -148,10 +144,10 @@ class RAGEngine:
             raise RuntimeError("Le moteur RAG n'est pas encore chargé.")
 
         logger.info(f"❓ Question : {question[:80]}...")
-        
+
         # 1. Retrieve the documents
         docs = self._retriever.invoke(question)
-        
+
         # 2. Generate the answer using the chain
         answer = self._chain.invoke(question)
 

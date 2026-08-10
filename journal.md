@@ -64,13 +64,29 @@ Ce fichier sert de journal de bord pour tracer l'avancement quotidien du projet 
 
 ---
 
-### Jour 6 (Aujourd'hui) — 10/08/2026
-**Statut :**
-- Journée en cours.
-- Aucun travail technique réalisé pour le moment.
+### Jour 6 — 10/08/2026
+**Résumé de la journée :**
+- **Développement des endpoints métiers** : implémentation complète de `/extract` (extraction structurée de données) et `/classify` (classification zero-shot), avec `src/nlp_engine.py` (`DocumentClassifier`, `DocumentExtractor`).
+- **Validation renforcée** : ajout d'un schéma Pydantic (`ExtractionSchema`) pour fiabiliser le parsing JSON du LLM, et d'un garde-fou sur `/classify` rejetant toute catégorie hallucinée hors de la liste fournie par l'utilisateur.
+- **Tests unitaires et d'intégration** : 19 tests créés (`tests/test_nlp_engine.py`, extension de `tests/test_api.py`), tous mockés pour rester compatibles CI/CD sans dépendance à un LLM réel. Résolution de deux problèmes de configuration pytest (`ModuleNotFoundError: src` via `pytest.ini` + `pythonpath`, puis erreur de fixture `client` non injectée).
+- **Pivot d'architecture LLM — Ollama → Groq** : tests de latence sur le poste de développement (Intel i5-1035G1, sans GPU dédié) ont confirmé qu'Ollama/`phi3:mini` en CPU-only était trop lent pour un usage confortable en développement et en démo. Décision de migrer vers **Groq** (API cloud, tier gratuit, modèles Llama open-source), après une brève exploration de xAI Grok (écarté : pas de tier gratuit garanti selon la documentation officielle, framing peu adapté au budget d'un projet de stage).
+  - Création de `src/llm_provider.py` : fabrique centralisée pour l'instanciation du LLM, utilisée par `rag_engine.py` et `nlp_engine.py`.
+  - Mise à jour de `.env.example`, `.gitignore`, `README.md` et suppression des dépendances Ollama (`langchain-ollama` → `langchain-groq`).
+  - **Impact sur l'architecture** : la plateforme n'est plus "100% locale" — la génération de réponses (RAG, extraction, classification) dépend désormais de l'API Groq. Les embeddings et l'index FAISS restent locaux. Ce compromis est documenté et assumé : latence/fiabilité en développement priorisées sur l'indépendance totale vis-à-vis du cloud.
+- **Validation en conditions réelles (post-mocks)** : tests manuels des 3 endpoints Groq via l'API démarrée localement.
+  - `/extract` → 261 ms, extraction exacte (montant, date, fournisseur).
+  - `/classify` → 146 ms, catégorie correcte.
+  - `/ask` (RAG complet) → réponse cohérente et sourcée.
+  - Gain de latence confirmé face à Ollama/CPU : facteur ~5 à 10x.
+- **Sécurité** : détection d'une clé API Google (Gemini, architecture abandonnée au Jour 5) laissée en clair dans un ancien `.env` — révocation recommandée par précaution. Une clé Groq a également été régénérée après exposition accidentelle en cours de développement. Vérification de l'historique Git (`git log --all --full-history -- .env`) à finaliser.
+
+**Écart par rapport à l'objectif initial du Jour 6 :** l'objectif prévoyait de "commencer" le développement de `/extract` et `/classify`. Les deux endpoints sont en réalité terminés, testés (mocks + conditions réelles) et fonctionnels — l'avancement dépasse la planification initiale.
+
+**Point à valider avec l'encadrant :** le pivot Ollama → Groq modifie la promesse d'indépendance "100% locale" du cahier des charges initial. Compromis à faire valider formellement.
 
 ---
 
-**Objectifs du Jour 6 :**
-- Développer les fonctionnalités de classification de documents et d'extraction de données structurées.
-- Intégrer la stack de Monitoring (Prometheus + Grafana).
+**Objectifs du Jour 7 :**
+- Étoffer le corpus de documents RAG (actuellement 1 document, 11 chunks) pour des tests plus représentatifs.
+- Entamer la phase de monitoring (Prometheus + Grafana), prévue en Semaine 3.
+- Réfléchir à une stratégie de fallback/gestion d'erreur en cas d'indisponibilité ou de quota dépassé sur l'API Groq.

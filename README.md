@@ -1,65 +1,3 @@
-# 🚀 Plateforme MLOps pour Déploiement IA
-
-> Projet de Stage — **ITGate Group**
-> Construction d'une plateforme complète d'entraînement, de suivi, de conteneurisation et de déploiement de modèles de Machine Learning.
-
----
-
-## 🗺️ Roadmap du Projet
-
-| Semaine | Thème | Statut |
-|---|---|---|
-| **Semaine 1** | Cadrage, environnement, MLflow, FastAPI, Docker, Kubernetes local | ✅ Terminé |
-| **Semaine 2** | Cas IA métiers : RAG local, extraction intelligente, classification de documents | 🔄 En cours |
-| Semaine 3 | Monitoring (Prometheus / Grafana), métriques applicatives, dashboard | 🔜 À venir |
-| Semaine 4 | CI/CD, automatisation du build, tests et déploiement | 🔜 À venir |
-
-### Avancement actuel
-
-Aujourd'hui, **lundi 10/08/2026**, correspond au **Jour 6** du stage.
-
-Le weekend du **08/08/2026** et du **09/08/2026** est compté comme une pause et n'est pas inclus dans les jours de travail.
-
-Statut actuel du Jour 6 : **en cours**. Aucun travail technique n'a encore été réalisé aujourd'hui.
-
-Objectif du Jour 6 :
-- Commencer le développement réel des endpoints métiers `/extract` et `/classify`.
-- Ajouter les tests unitaires et d'intégration associés.
-- Préparer la transition vers le monitoring Prometheus / Grafana.
-
----
-
-## 🏗️ Architecture du Projet
-
-```
-Platforme MLOps/
-│
-├── src/
-│   ├── train.py          # Pipeline d'entraînement ML + MLflow Tracking
-│   ├── train_rag.py      # Pipeline d'ingestion RAG + index FAISS
-│   ├── rag_engine.py     # Moteur RAG local avec Ollama
-│   ├── nlp_engine.py     # Classification et extraction de documents
-│   └── serve.py          # API FastAPI : prédiction, RAG, extraction, classification
-│
-├── k8s/
-│   ├── configmap.yaml    # Variables de configuration Kubernetes
-│   ├── deployment.yaml   # Déploiement des pods de l'API
-│   ├── service.yaml      # Exposition réseau de l'API (LoadBalancer)
-│   └── hpa.yaml          # Auto-Scaling automatique (2 à 8 répliques)
-│
-├── tests/                # Tests unitaires et tests API
-├── data/
-│   ├── raw/              # Documents bruts pour le RAG
-│   └── processed/        # Index FAISS généré
-│
-├── Dockerfile            # Recette de construction de l'image Docker (multi-stage)
-├── .dockerignore         # Fichiers exclus de l'image Docker
-├── .env.example          # Modèle de configuration des variables d'environnement
-├── Makefile              # Raccourcis de commandes (train, serve, docker, k8s)
-├── requirements.txt      # Dépendances Python
-└── README.md             # Ce fichier
-```
-
 ---
 
 ## 🛠️ Installation et Configuration
@@ -69,6 +7,7 @@ Platforme MLOps/
 - Git
 - Docker Desktop
 - Kubernetes activé dans Docker Desktop
+- Une clé API **Groq** gratuite (voir section RAG ci-dessous)
 
 ### 1. Cloner le dépôt
 ```powershell
@@ -87,10 +26,10 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-### 4. Configurer les variables d'environnement (optionnel)
+### 4. Configurer les variables d'environnement
 ```powershell
 copy .env.example .env
-# Éditez .env selon vos besoins
+# Éditez .env et renseignez votre GROQ_API_KEY (voir console.groq.com)
 ```
 
 ---
@@ -182,14 +121,16 @@ kubectl get pods,svc,hpa -l app=ml-inference
 | API | FastAPI + Uvicorn | Serveur d'inférence web |
 | Conteneurisation | Docker | Empaquetage de l'application |
 | Orchestration | Kubernetes | Déploiement, scaling, résilience |
-| IA / RAG | Ollama + FAISS | Modèle LLM local et Vector Store |
+| IA / RAG | Groq (cloud) + FAISS | LLM rapide (API gratuite) et Vector Store local |
 | Monitoring | Prometheus + Grafana | *(Semaine 3)* |
 
 ---
 
 ## 🤖 Semaine 2 — Système RAG (Retrieval-Augmented Generation)
 
-La plateforme intègre un système de questions/réponses documentaire basé sur vos propres données, fonctionnant **100% en local** (aucune clé API requise).
+La plateforme intègre un système de questions/réponses documentaire basé sur vos propres données. Les **embeddings et l'index vectoriel FAISS restent 100% locaux** ; la génération de réponses est effectuée via l'API cloud **Groq** (tier gratuit), choisie après tests de performance — l'alternative locale (Ollama) s'est avérée trop lente sur un poste de développement sans GPU dédié.
+
+> ⚠️ Nécessite une clé API Groq gratuite. Créez un compte sur [console.groq.com](https://console.groq.com) et renseignez `GROQ_API_KEY` dans votre `.env` (voir `.env.example`).
 
 ### 1. Ingestion des documents (Création de l'index FAISS)
 Placez vos documents `.txt` dans le dossier `data/raw/` puis lancez :
@@ -198,22 +139,22 @@ make train-rag
 # ou
 python src/train_rag.py --run-name "RAG_Local_Ingestion"
 ```
-Cela va découper les documents, calculer les embeddings (avec `sentence-transformers`) et sauvegarder l'index vectoriel dans MLflow.
+Cela va découper les documents, calculer les embeddings localement (avec `sentence-transformers`) et sauvegarder l'index vectoriel dans MLflow.
 
 ### 2. Poser des questions via l'API
-L'API intègre un endpoint `/ask` pour interroger vos documents (assurez-vous qu'Ollama est installé et le modèle `phi3:mini` téléchargé).
+L'API intègre un endpoint `/ask` pour interroger vos documents (assurez-vous que `GROQ_API_KEY` est configuré dans votre `.env`).
 ```bash
 curl -X POST "http://127.0.0.1:8000/ask" \
   -H "Content-Type: application/json" \
   -d '{"question": "Quels sont les horaires de travail de lentreprise ?"}'
 ```
-L'API retournera une réponse générée par l'IA locale, ainsi que les sources (fichiers) utilisées pour générer cette réponse.
+L'API retournera une réponse générée par Groq, ainsi que les sources (fichiers) utilisées pour générer cette réponse.
 
 ---
 
 ## 🧾 IA Métier — Extraction et Classification
 
-La plateforme prépare également deux endpoints métiers pour traiter des documents texte :
+La plateforme intègre deux endpoints métiers pour traiter des documents texte, tous deux propulsés par l'API Groq :
 
 | Endpoint | Rôle |
 |---|---|
@@ -236,7 +177,7 @@ curl -X POST "http://127.0.0.1:8000/extract" \
     "date": "2026-08-10",
     "fournisseur": "ITGate Group"
   },
-  "duration_ms": 950.42
+  "duration_ms": 261.13
 }
 ```
 
@@ -252,7 +193,7 @@ curl -X POST "http://127.0.0.1:8000/classify" \
 ```json
 {
   "category": "Facture",
-  "duration_ms": 870.15
+  "duration_ms": 146.43
 }
 ```
 

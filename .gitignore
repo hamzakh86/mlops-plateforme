@@ -6,7 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
-# Environments
+# Environnements virtuels
 .env
 .venv
 env/
@@ -20,3 +20,25 @@ ENV/
 # MLflow
 mlruns/
 *.db
+
+# Données générées (RAG) — l'index FAISS est un artefact reconstructible, pas du code source
+data/processed/
+
+# Tests & couverture
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets Kubernetes (si tu ajoutes des Secret manifests avec des valeurs en clair)
+k8s/*secret*.yaml

@@ -96,3 +96,62 @@ class TestPredictEndpoint:
         payload = {"data": []}
         response = client.post("/predict", json=payload)
         assert response.status_code == 422
+
+
+class TestExtractEndpoint:
+    """Tests pour l'endpoint POST /extract."""
+
+    def test_extract_endpoint(self, client):
+        with patch("src.serve._extractor.extract") as mock_extract:
+            mock_extract.return_value = {
+                "montant_total": 1250.5,
+                "date": "2026-08-10",
+                "fournisseur": "ITGate Group",
+            }
+            response = client.post(
+                "/extract",
+                json={"text": "Facture ITGate Group du 10/08/2026. Montant: 1250.50 TND."},
+            )
+            assert response.status_code == 200
+            body = response.json()
+            assert body["extracted_data"]["fournisseur"] == "ITGate Group"
+            assert "duration_ms" in body
+
+    def test_extract_validation_error_short_text(self, client):
+        # min_length=10 sur ExtractRequest.text
+        response = client.post("/extract", json={"text": "court"})
+        assert response.status_code == 422
+
+
+class TestClassifyEndpoint:
+    """Tests pour l'endpoint POST /classify."""
+
+    def test_classify_endpoint(self, client):
+        with patch("src.serve._classifier.classify") as mock_classify:
+            mock_classify.return_value = "Facture"
+            response = client.post(
+                "/classify",
+                json={
+                    "text": "Facture ITGate Group du 10/08/2026. Montant total: 1250.50 TND.",
+                    "categories": ["Facture", "CV", "Contrat", "Rapport"],
+                },
+            )
+            assert response.status_code == 200
+            body = response.json()
+            assert body["category"] == "Facture"
+            assert "duration_ms" in body
+
+    def test_classify_validation_error_single_category(self, client):
+        # min_length=2 sur ClassifyRequest.categories
+        response = client.post(
+            "/classify",
+            json={"text": "texte suffisamment long pour passer", "categories": ["Facture"]},
+        )
+        assert response.status_code == 422
+
+    def test_classify_validation_error_short_text(self, client):
+        response = client.post(
+            "/classify",
+            json={"text": "court", "categories": ["Facture", "CV"]},
+        )
+        assert response.status_code == 422
