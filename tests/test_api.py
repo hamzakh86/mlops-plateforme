@@ -7,6 +7,7 @@ Tests d'intégration pour l'API FastAPI (serve.py).
 import pytest
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
+from src.models import User
 
 
 @pytest.fixture
@@ -18,7 +19,16 @@ def mock_model():
 
 
 @pytest.fixture
-def client(mock_model):
+def mock_user():
+    """Utilisateur mocké pour les tests."""
+    user = MagicMock(spec=User)
+    user.id = 1
+    user.username = "testuser"
+    return user
+
+
+@pytest.fixture
+def client(mock_model, mock_user):
     """Client de test FastAPI avec le modèle mocké."""
     import src.serve as serve_module
     serve_module._model = mock_model
@@ -29,11 +39,10 @@ def client(mock_model):
     }
     from fastapi.testclient import TestClient
     # Le lifespan FastAPI est exécuté par TestClient : on neutralise les chargements externes.
-    with patch("src.serve._load_best_model"), patch.object(
-        serve_module._rag_engine,
-        "load_from_mlflow",
-        return_value={"run_id": "test-rag-run", "num_chunks": 0},
-    ):
+    with patch("src.serve._load_best_model"), \
+         patch.object(serve_module._rag_engine, "load_from_mlflow",
+                     return_value={"run_id": "test-rag-run", "num_chunks": 0}), \
+         patch("src.auth.get_current_user", return_value=mock_user):
         serve_module._model = mock_model
         serve_module._model_info = {
             "run_id": "test-run-id-12345",
