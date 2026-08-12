@@ -34,6 +34,9 @@ spec:
         envFrom:
         - configMapRef:
             name: ml-inference-config
+        - secretRef:
+            name: groq-api-secret
+            optional: true
         # Probe de démarrage : laisse le temps au modèle d'être chargé
         startupProbe:
           httpGet:

@@ -1,14 +1,15 @@
 """
 src/train_rag.py
 ────────────────
-Pipeline d'ingestion de documents pour le système RAG (100% Local).
+Pipeline d'ingestion de documents pour le système RAG.
 
 Utilise :
   - sentence-transformers (all-MiniLM-L6-v2) pour les embeddings locaux
   - FAISS pour le stockage vectoriel
   - MLflow pour le tracking du pipeline
 
-Aucune clé API requise. Fonctionne entièrement hors ligne.
+Cette étape d'ingestion fonctionne hors ligne. La génération de réponses
+est ensuite réalisée par Groq au moment de l'inférence.
 
 Usage:
     python src/train_rag.py
@@ -120,14 +121,14 @@ def main(data_dir: str, run_name: str) -> None:
             "chunk_size":      CHUNK_SIZE,
             "chunk_overlap":   CHUNK_OVERLAP,
             "embedding_model": EMBEDDING_MODEL,
-            "llm_backend":     "Ollama (local)",
+            "llm_backend":     "Groq (cloud, inference)",
             "num_documents":   len(docs),
             "num_chunks":      len(chunks),
         })
         mlflow.set_tags({
             "pipeline_type": "RAG",
             "vectorstore":   "FAISS",
-            "llm_provider":  "Ollama (local)",
+            "llm_provider":  "Groq (cloud)",
             "embedding_provider": "sentence-transformers (local)",
         })
         mlflow.log_metric("num_documents", len(docs))
@@ -148,7 +149,7 @@ def main(data_dir: str, run_name: str) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Pipeline d'ingestion RAG local (sentence-transformers + FAISS)"
+        description="Pipeline d'ingestion RAG (sentence-transformers + FAISS locaux)"
     )
     parser.add_argument("--data-dir", type=str, default="data/raw",
                         help="Dossier contenant les documents .txt à ingérer.")

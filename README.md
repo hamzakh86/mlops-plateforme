@@ -1,7 +1,23 @@
+# 🚀 Plateforme MLOps — ITGate Group (V2 Production Ready)
+
+Plateforme MLOps de bout en bout développée dans le cadre du projet de stage **ITGate Group** (Août 2026). Elle intègre l'entraînement de modèles ML, l'inférence en temps réel, un moteur RAG (IA générative sur documents), l'historisation persistante, la sécurité JWT, l'observabilité (Prometheus/Grafana) et le déploiement GitOps (ArgoCD / Kubernetes).
+
+---
+
+## 🌟 Nouvelles Fonctionnalités V2
+- 🔐 **Sécurité JWT** : Authentification par jeton OAuth2/JWT. Identifiants par défaut : `admin` / `admin`.
+- 🗄️ **Base de Données & Historique** : Persistance SQLite + SQLAlchemy pour l'historique complet des requêtes API.
+- 🎨 **Branding ITGate & UI Glassmorphism** : Interface React modernisée avec le logo officiel ITGate Group, fond animé et flux de déconnexion.
+- 📊 **Évaluation RAG (Ragas)** : Script d'évaluation automatique de la fidélité et pertinence des réponses IA (`make evaluate-rag`).
+- 🔄 **GitOps ArgoCD** : Manifeste Kubernetes automatisé (`k8s/argocd/application.yaml`).
+
+---
+
 ## 🛠️ Installation et Configuration
 
 ### Prérequis
 - Python **3.11+**
+- Node.js **22+** et npm (pour l'interface React)
 - Git
 - Docker Desktop
 - Kubernetes activé dans Docker Desktop
@@ -9,8 +25,8 @@
 
 ### 1. Cloner le dépôt
 ```powershell
-git clone <url-de-votre-repo>
-cd "Platforme MLOps"
+git clone https://github.com/hamzakh86/mlops-plateforme.git
+cd "mlops-plateforme"
 ```
 
 ### 2. Créer et activer l'environnement virtuel Python
@@ -65,8 +81,38 @@ Ouvrez **http://127.0.0.1:5000** dans votre navigateur.
 ```powershell
 uvicorn src.serve:app --host 127.0.0.1 --port 8000 --reload
 ```
+- **Interface web de pilotage** → **http://127.0.0.1:8000/**
 - **Swagger UI** (documentation interactive) → **http://127.0.0.1:8000/docs**
 - **Health check** → **http://127.0.0.1:8000/health**
+
+### Interface web de pilotage
+
+La plateforme inclut une interface web React complète. En développement, lancez l'API puis le frontend :
+
+```powershell
+uvicorn src.serve:app --host 127.0.0.1 --port 8000 --reload
+npm install --prefix frontend
+npm run dev --prefix frontend
+```
+
+Ouvrez **http://127.0.0.1:5173**.
+
+Pour servir l'interface directement par FastAPI sur **http://127.0.0.1:8000/** :
+
+```powershell
+npm run build --prefix frontend
+uvicorn src.serve:app --host 127.0.0.1 --port 8000 --reload
+```
+
+L'interface permet de :
+
+- visualiser l'état de l'API, du modèle MLflow et du moteur RAG ;
+- naviguer entre Dashboard, Inférence ML, IA documents, Observabilité et Déploiement ;
+- tester une prédiction Iris via `/predict` ;
+- poser une question documentaire via `/ask` ;
+- tester l'extraction `/extract` et la classification `/classify` ;
+- suivre l'activité récente des appels API ;
+- ouvrir rapidement Swagger, MLflow, Prometheus et Grafana.
 
 ### Exemple de requête de prédiction
 ```bash
@@ -89,6 +135,14 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 # Construire l'image (multi-stage build)
 docker build -t ml-inference-api:latest .
 
+# Construire une image versionnée localement
+make docker-build-versioned IMAGE_TAG=v0.1.0
+
+# Alternative PowerShell si `make` n'est pas installé : utilisez directement `docker build`.
+
+# Publier une image versionnée vers un registry Docker
+make docker-push-versioned IMAGE_TAG=v0.1.0 IMAGE_REGISTRY=ghcr.io/<votre-utilisateur>
+
 # Lancer un conteneur
 docker run -p 8000:8000 --name ml-api ml-inference-api:latest
 
@@ -96,8 +150,18 @@ docker run -p 8000:8000 --name ml-api ml-inference-api:latest
 curl http://localhost:8000/health
 ```
 
+Smoke test Docker complet sous PowerShell (build, run temporaire, vérification `/health`, nettoyage) :
+
+```powershell
+.\scripts\docker_smoke_test.ps1 -ImageTag smoke
+```
+
 ### Déployer sur Kubernetes (local)
 ```powershell
+# Créer le secret Groq si les endpoints IA doivent fonctionner dans Kubernetes
+$env:GROQ_API_KEY="<votre-cle-groq>"
+make k8s-create-groq-secret
+
 # Appliquer tous les manifestes dans l'ordre
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/deployment.yaml
@@ -106,6 +170,20 @@ kubectl apply -f k8s/hpa.yaml
 
 # Vérifier l'état du déploiement
 kubectl get pods,svc,hpa -l app=ml-inference
+```
+
+Le dossier `k8s/` contient un `README.md` dédié avec le détail des ressources, la gestion du Secret Groq et les annotations Prometheus.
+
+Pour utiliser une image publiée dans GitHub Container Registry, adaptez `k8s/deployment-ghcr.yaml` avec votre owner/repo/tag puis lancez :
+
+```powershell
+make k8s-deploy-ghcr IMAGE_REGISTRY=ghcr.io/<owner>/<repo> IMAGE_TAG=<tag>
+```
+
+Sur Windows sans `make`, utilisez le script PowerShell natif :
+
+```powershell
+.\scripts\k8s_deploy_ghcr.ps1 -ImageRegistry ghcr.io/owner/repo -ImageTag tag
 ```
 
 ---
@@ -120,7 +198,7 @@ kubectl get pods,svc,hpa -l app=ml-inference
 | Conteneurisation | Docker | Empaquetage de l'application |
 | Orchestration | Kubernetes | Déploiement, scaling, résilience |
 | IA / RAG | Groq (cloud) + FAISS | LLM rapide (API gratuite) et Vector Store local |
-| Monitoring | Prometheus + Grafana | *(Semaine 3)* |
+| Monitoring | Prometheus + Grafana | Métriques HTTP + métriques métier IA |
 
 ---
 
@@ -139,6 +217,11 @@ python src/train_rag.py --run-name "RAG_Local_Ingestion"
 ```
 Cela va découper les documents, calculer les embeddings localement (avec `sentence-transformers`) et sauvegarder l'index vectoriel dans MLflow.
 
+Le corpus d'exemple contient maintenant plusieurs documents internes :
+- `data/raw/itgate_company_document.txt`
+- `data/raw/mlops_platform_architecture.txt`
+- `data/raw/security_and_operations_policy.txt`
+
 ### 2. Poser des questions via l'API
 L'API intègre un endpoint `/ask` pour interroger vos documents (assurez-vous que `GROQ_API_KEY` est configuré dans votre `.env`).
 ```bash
@@ -147,6 +230,8 @@ curl -X POST "http://127.0.0.1:8000/ask" \
   -d '{"question": "Quels sont les horaires de travail de lentreprise ?"}'
 ```
 L'API retournera une réponse générée par Groq, ainsi que les sources (fichiers) utilisées pour générer cette réponse.
+
+Si Groq est indisponible ou si le quota API est dépassé, le RAG applique un fallback : la recherche FAISS locale continue, les sources pertinentes sont retournées, et le champ `fallback` indique que la génération LLM n'a pas pu être utilisée.
 
 ---
 
@@ -193,6 +278,137 @@ curl -X POST "http://127.0.0.1:8000/classify" \
   "category": "Facture",
   "duration_ms": 146.43
 }
+```
+
+---
+
+## 📈 Monitoring Prometheus
+
+L'API expose les métriques Prometheus sur :
+
+```text
+http://127.0.0.1:8000/metrics
+```
+
+En plus des métriques HTTP générées automatiquement par `prometheus-fastapi-instrumentator`, la plateforme expose des métriques métier pour les fonctionnalités IA :
+
+| Métrique | Rôle |
+|---|---|
+| `mlops_llm_requests_total` | Nombre d'appels IA par endpoint et statut (`success`, `fallback`, `error`) |
+| `mlops_llm_fallbacks_total` | Nombre de fallbacks déclenchés après erreur LLM |
+| `mlops_llm_request_duration_seconds` | Latence des endpoints IA |
+| `mlops_rag_retrieved_documents` | Nombre de documents récupérés par FAISS pour une requête RAG |
+
+Ces métriques préparent l'intégration Grafana : latence par endpoint, taux de fallback Groq et activité du moteur RAG.
+
+### Stack locale Prometheus + Grafana
+
+Une configuration Docker Compose dédiée permet de lancer l'API, Prometheus et Grafana :
+
+```powershell
+make monitoring-up
+# ou
+docker compose -f docker-compose.monitoring.yml up --build -d
+```
+
+Services exposés :
+
+| Service | URL | Usage |
+|---|---|---|
+| API FastAPI | http://127.0.0.1:8000/docs | Tester les endpoints |
+| Prometheus | http://127.0.0.1:9090 | Vérifier les targets et requêter les métriques |
+| Grafana | http://127.0.0.1:3000 | Visualiser le dashboard |
+
+Identifiants Grafana par défaut :
+
+```text
+admin / admin
+```
+
+Le dashboard `MLOps Platform Monitoring` est provisionné automatiquement depuis `monitoring/grafana/dashboards/mlops-platform.json`.
+
+Commandes utiles :
+
+```powershell
+make monitoring-status
+make monitoring-logs
+make monitoring-down
+```
+
+### Générer du trafic de démonstration
+
+Après le démarrage de l'API, vous pouvez générer quelques requêtes pour alimenter Prometheus et Grafana :
+
+```powershell
+make demo-traffic
+```
+
+Sans appeler Groq :
+
+```powershell
+make demo-traffic-lite
+```
+
+Une note d'architecture courte est disponible dans `docs/architecture-monitoring-fallback.md`.
+
+---
+
+## 🧪 Démonstration et Smoke Tests
+
+Des payloads prêts à l'emploi sont disponibles dans `examples/`.
+
+Vérifier rapidement l'API démarrée :
+
+```powershell
+make smoke-api
+```
+
+Sans appels Groq :
+
+```powershell
+make smoke-api-lite
+```
+
+Le déroulé complet de démonstration est documenté dans `docs/demo-guide.md`.
+
+Pour une démo Windows sans `make`, utilisez :
+
+```text
+docs/windows-demo-checklist.md
+```
+
+---
+
+## 🔁 CI/CD
+
+Le dépôt contient une base GitHub Actions dans `.github/workflows/ci.yml`.
+
+À chaque push sur `main`/`master` et à chaque pull request, la CI :
+
+- installe les dépendances Python ;
+- valide les artefacts de déploiement, monitoring et démonstration ;
+- lance les tests unitaires et d'intégration ;
+- prépare un modèle MLflow minimal pour le build ;
+- vérifie que l'image Docker de l'API se construit correctement avec les tags `ci` et SHA court du commit ;
+- ajoute des métadonnées OCI à l'image (`version`, `revision`, `created`).
+- publie l'image vers GitHub Container Registry sur les pushes `main`/`master`.
+
+Validation locale équivalente :
+
+```powershell
+make ci-local
+```
+
+Valider uniquement les artefacts de déploiement, monitoring et démonstration :
+
+```powershell
+make validate-artifacts
+```
+
+Vérifier localement l'image Docker si Docker Desktop est démarré :
+
+```powershell
+.\scripts\docker_smoke_test.ps1 -ImageTag smoke
 ```
 
 ---

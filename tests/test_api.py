@@ -28,9 +28,20 @@ def client(mock_model):
         "experiment": "Iris_Classification",
     }
     from fastapi.testclient import TestClient
-    # On utilise le client sans lifespan pour éviter de charger MLflow
-    with TestClient(serve_module.app, raise_server_exceptions=True) as client:
-        yield client
+    # Le lifespan FastAPI est exécuté par TestClient : on neutralise les chargements externes.
+    with patch("src.serve._load_best_model"), patch.object(
+        serve_module._rag_engine,
+        "load_from_mlflow",
+        return_value={"run_id": "test-rag-run", "num_chunks": 0},
+    ):
+        serve_module._model = mock_model
+        serve_module._model_info = {
+            "run_id": "test-run-id-12345",
+            "accuracy": 0.95,
+            "experiment": "Iris_Classification",
+        }
+        with TestClient(serve_module.app, raise_server_exceptions=True) as client:
+            yield client
 
 
 class TestHealthEndpoint:
@@ -48,6 +59,18 @@ class TestHealthEndpoint:
         assert "status" in data
         assert "model_loaded" in data
         assert "model_info" in data
+
+
+class TestFrontendEndpoint:
+    """Tests pour l'interface web de pilotage."""
+
+    def test_dashboard_returns_html(self, client):
+        response = client.get("/")
+
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+        assert "Plateforme MLOps - ITGate" in response.text
+        assert "/assets/" in response.text
 
 
 class TestPredictEndpoint:

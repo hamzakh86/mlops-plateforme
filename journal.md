@@ -90,3 +90,67 @@ Ce fichier sert de journal de bord pour tracer l'avancement quotidien du projet 
 - Étoffer le corpus de documents RAG (actuellement 1 document, 11 chunks) pour des tests plus représentatifs.
 - Entamer la phase de monitoring (Prometheus + Grafana), prévue en Semaine 3.
 - Réfléchir à une stratégie de fallback/gestion d'erreur en cas d'indisponibilité ou de quota dépassé sur l'API Groq.
+
+---
+
+### Jour 7 — 11/08/2026
+**Résumé de la journée :**
+- **Élargissement du corpus RAG** : ajout de deux nouveaux documents internes dans `data/raw/` :
+  - `mlops_platform_architecture.txt` : architecture de la plateforme, composants, stratégie de déploiement.
+  - `security_and_operations_policy.txt` : monitoring, gestion d'incidents LLM, sécurité des secrets.
+- **Réingestion RAG** : régénération de l'index FAISS avec le corpus élargi.
+  - Corpus final : 3 documents.
+  - Découpage final : 21 chunks.
+  - Run MLflow : `a673d7f0c93747419640c4c44623a7ac`.
+- **Correction de cohérence documentaire** : mise à jour des références techniques restantes après le pivot Ollama/Gemini vers **Groq + FAISS**.
+- **Monitoring métier Prometheus** : ajout de `src/monitoring.py` avec des métriques dédiées :
+  - `mlops_llm_requests_total` pour suivre les appels IA par endpoint et statut.
+  - `mlops_llm_fallbacks_total` pour mesurer les indisponibilités/quota Groq.
+  - `mlops_llm_request_duration_seconds` pour mesurer la latence des endpoints IA.
+  - `mlops_rag_retrieved_documents` pour observer le nombre de documents récupérés par FAISS.
+- **Fallback Groq** : implémentation d'une stratégie de dégradation contrôlée.
+  - `/ask` conserve la recherche FAISS locale et retourne les sources pertinentes même si Groq échoue.
+  - `/extract` retourne une structure stable avec champs `null` en cas d'erreur LLM.
+  - `/classify` retourne `Erreur_Classification` en cas d'erreur LLM.
+  - Les endpoints exposent désormais un champ `fallback` pour rendre l'état visible côté client.
+- **Robustesse applicative** : initialisation lazy des chaînes LLM dans `DocumentClassifier` et `DocumentExtractor`, afin d'éviter qu'une clé Groq absente bloque l'import de l'application ou les tests.
+- **Tests** :
+  - Correction de la fixture FastAPI pour neutraliser explicitement le lifespan MLflow/RAG pendant les tests.
+  - Correction du test RAG qui mockait encore `ChatOllama` au lieu du provider Groq centralisé.
+  - Ajout d'un test de fallback RAG lorsque le LLM échoue.
+  - Validation : `23 passed` sur les tests API/NLP/RAG, puis `4 passed` sur les tests du pipeline d'entraînement.
+- **Correction Docker** : suppression d'un caractère parasite au début du `Dockerfile` qui pouvait casser le build.
+
+**Résultat du Jour 7 :** la plateforme dispose maintenant d'un corpus RAG plus représentatif, d'une base de monitoring métier exploitable par Prometheus/Grafana, et d'une stratégie de fallback claire pour limiter l'impact d'une indisponibilité Groq.
+
+**Objectifs proposés pour le Jour 8 :**
+- Régénérer l'index RAG avec le corpus élargi (`make train-rag`) et valider quelques questions de démonstration.
+- Ajouter une configuration Prometheus/Grafana locale (`monitoring/prometheus.yml`, dashboard Grafana JSON ou documentation de dashboard).
+- Préparer une courte note pour l'encadrant sur le compromis Groq cloud vs indépendance locale.
+
+---
+
+### Jour 8 — 11/08/2026
+**Résumé de la journée :**
+- **Observabilité & Monitoring** : Ajout de la stack Docker Compose (`docker-compose.monitoring.yml`), configuration Prometheus (`monitoring/prometheus.yml`) et provisioning Grafana avec dashboard de supervision des métriques HTTP, latence et fallbacks.
+- **Démonstration & CI/CD** : Création du script de trafic de démonstration (`scripts/generate_demo_traffic.py`), mise en place du workflow GitHub Actions (`.github/workflows/ci.yml`), versionnement des images Docker et publication sur GitHub Container Registry (`ghcr.io`).
+- **Durcissement Kubernetes & Scripts Windows** : Sécurisation des clés via Secrets Kubernetes (`k8s/groq-api-secret`), scripts PowerShell pour Windows (`scripts/k8s_deploy_ghcr.ps1` et `scripts/docker_smoke_test.ps1`) et checklist de soutenance (`docs/windows-demo-checklist.md`).
+- **Console Web React & Packaging Docker** : Développement de la console web en React (`frontend/`), intégration dans l'image Docker multi-stage (Node 22 + Python 3.11) et service des assets statiques via FastAPI.
+
+**Résultat du Jour 8 :** La plateforme est dotée d'une observabilité Grafana/Prometheus complète, d'une console React professionnelle, d'une intégration CI/CD avec GHCR et de manifestes Kubernetes prêts pour la production.
+
+---
+
+### Jour 9 — 12/08/2026
+**Résumé de la journée :**
+- **Persistance & Base de données (SQLite + SQLAlchemy)** : Création de la couche d'accès aux données dans `src/database.py` et `src/models.py` (tables `User` et `ApiRequestLog`). Historisation de chaque appel API via la route `/history` et affichage persistant dans le dashboard React.
+- **Sécurisation par Authentification JWT** : Implémentation du système d'authentification OAuth2 avec JSON Web Tokens (`src/auth.py`). Protection de tous les endpoints de prédiction/RAG/nlp avec dépendances de sécurité `Depends(get_current_user)`. Utilisation de `pbkdf2_sha256` pour le hachage sécurisé des mots de passe.
+- **Branding ITGate & Redesign de l'Interface** :
+  - Intégration du logo officiel **ITGate Group** (`logo.png`) dans le header de l'application et la page de connexion.
+  - Refonte complète de la page de login avec un design *glassmorphism* haut de gamme (fond animé bleu/teal, carte semi-transparente avec flou, effets de survol et halo lumineux).
+  - Ajout du bouton et du flux de **Déconnexion (Logout)** dans la barre latérale pour purger le token JWT et rediriger l'utilisateur.
+- **Évaluation de la Qualité RAG (Ragas)** : Développement du script `scripts/evaluate_rag.py` permettant de calculer les métriques de fidélité et de pertinence des réponses du RAG via la bibliothèque `ragas`. Ajout de la commande `make evaluate-rag`.
+- **GitOps & Continuous Deployment (ArgoCD)** : Rédaction du manifeste Kubernetes ArgoCD `k8s/argocd/application.yaml` afin de piloter le déploiement continu du cluster depuis le dépôt Git.
+- **Observabilité & Monitoring** : Mise à jour de la configuration Prometheus (`monitoring/prometheus.yml`) avec le target `host.docker.internal:8000` pour scraper les métriques en environnement local et conteneurisé.
+
+**Résultat :** La plateforme MLOps ITGate est désormais complète, hautement sécurisée (JWT + DB), dotée d'une identité visuelle professionnelle et prête pour la démonstration en réunion.

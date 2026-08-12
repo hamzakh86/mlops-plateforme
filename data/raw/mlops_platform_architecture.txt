@@ -1,0 +1,38 @@
+RAPPORT TECHNIQUE - PLATEFORME MLOPS
+Document : Architecture de la plateforme IA
+Version : 1.0 - Aout 2026
+
+==========================================================
+1. OBJECTIF DE LA PLATEFORME
+==========================================================
+
+La plateforme MLOps a pour objectif de couvrir le cycle de vie complet d'un
+modele Machine Learning : entrainement, tracking, packaging, deploiement,
+monitoring et amelioration continue.
+
+Le modele Iris sert de baseline technique pour valider l'infrastructure avant
+l'integration de cas metier plus complexes.
+
+==========================================================
+2. COMPOSANTS PRINCIPAUX
+==========================================================
+
+MLflow est utilise pour historiser les experiences, les hyperparametres, les
+metriques et les artefacts de modele. FastAPI expose les endpoints d'inference
+et les endpoints IA metier. Docker permet de construire une image reproductible
+de l'API. Kubernetes gere le deploiement, la disponibilite et l'autoscaling.
+
+Le systeme RAG s'appuie sur des embeddings locaux sentence-transformers et sur
+un index FAISS. La generation de reponses est realisee par Groq afin d'obtenir
+une latence acceptable sur un poste de developpement sans GPU dedie.
+
+==========================================================
+3. STRATEGIE DE DEPLOIEMENT
+==========================================================
+
+L'API est exposee via un service Kubernetes. Les probes de sante utilisent
+l'endpoint /health. L'autoscaling horizontal repose sur le HPA afin d'ajuster
+le nombre de replicas selon la charge CPU.
+
+Les variables de configuration sont separees du code via .env en local et via
+ConfigMap ou Secret dans Kubernetes.

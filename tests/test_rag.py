@@ -28,9 +28,9 @@ class TestRAGEngine:
     @patch("src.rag_engine.mlflow")
     @patch("src.rag_engine.FAISS")
     @patch("src.rag_engine.HuggingFaceEmbeddings")
-    @patch("src.rag_engine.ChatOllama")
+    @patch("src.rag_engine.get_llm")
     def test_rag_ask_returns_correct_structure(
-        self, mock_ollama, mock_embeddings, mock_faiss, mock_mlflow
+        self, mock_get_llm, mock_embeddings, mock_faiss, mock_mlflow
     ):
         """La méthode ask() doit retourner un dict avec 'answer' et 'sources'."""
         from src.rag_engine import RAGEngine
@@ -56,3 +56,25 @@ class TestRAGEngine:
         assert isinstance(result["sources"], list)
         assert len(result["answer"]) > 0
         assert "data/raw/itgate_company_document.txt" in result["sources"]
+
+    def test_rag_ask_returns_fallback_when_llm_fails(self):
+        """Si Groq échoue, le RAG doit garder les sources locales FAISS."""
+        from src.rag_engine import RAGEngine
+
+        mock_retriever = MagicMock()
+        mock_retriever.invoke.return_value = [
+            MagicMock(metadata={"source": "data/raw/security_policy.txt"})
+        ]
+
+        mock_chain = MagicMock()
+        mock_chain.invoke.side_effect = Exception("quota exceeded")
+
+        engine = RAGEngine()
+        engine._chain = mock_chain
+        engine._retriever = mock_retriever
+
+        result = engine.ask("Quelle est la politique de mots de passe ?")
+
+        assert result["fallback"] is True
+        assert "Groq est indisponible" in result["answer"]
+        assert result["sources"] == ["data/raw/security_policy.txt"]

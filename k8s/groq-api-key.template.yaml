@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: groq-api-secret
+  namespace: default
+  labels:
+    app: ml-inference
+type: Opaque
+stringData:
+  GROQ_API_KEY: "replace-with-your-groq-api-key"

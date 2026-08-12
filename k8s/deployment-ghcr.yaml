@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-inference-deployment
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+      - name: ml-inference-container
+        image: ghcr.io/<owner>/<repo>/ml-inference-api:<tag>
+        imagePullPolicy: IfNotPresent

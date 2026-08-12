@@ -12,13 +12,35 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ─────────────────────────────────────────────────────────────────
-# Stage 2 : Runtime — image finale légère (sans outils de build)
+# Stage 2 : Frontend — construit l'interface React
+# ─────────────────────────────────────────────────────────────────
+FROM node:22-slim AS frontend-builder
+
+WORKDIR /frontend
+
+COPY frontend/package*.json ./
+RUN npm ci
+
+COPY frontend/ ./
+RUN npm run build
+
+# ─────────────────────────────────────────────────────────────────
+# Stage 3 : Runtime — image finale légère (sans outils de build)
 # ─────────────────────────────────────────────────────────────────
 FROM python:3.11-slim AS runtime
 
-# Métadonnées de l'image
+# Métadonnées de l'image, renseignées par la CI ou par Makefile
+ARG APP_VERSION=dev
+ARG VCS_REF=local
+ARG BUILD_DATE=unknown
+
 LABEL maintainer="Plateforme MLOps - Stage ITGate"
-LABEL version="2.0.0"
+LABEL version="${APP_VERSION}"
+LABEL org.opencontainers.image.title="MLOps Platform API"
+LABEL org.opencontainers.image.description="FastAPI inference API with MLflow, RAG, Groq fallback and Prometheus metrics"
+LABEL org.opencontainers.image.version="${APP_VERSION}"
+LABEL org.opencontainers.image.revision="${VCS_REF}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
 
 # Bonnes pratiques de sécurité : ne pas exécuter en tant que root
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
@@ -30,6 +52,7 @@ COPY --from=builder /install /usr/local
 
 # Copier le code source
 COPY src/ ./src/
+COPY --from=frontend-builder /frontend/dist ./frontend/dist
 
 # Copier les artefacts MLflow nécessaires au chargement du modèle
 COPY mlflow.db .

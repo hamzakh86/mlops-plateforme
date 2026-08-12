@@ -6,27 +6,38 @@ API FastAPI — Plateforme MLOps (ITGate Group)
 Expose :
   GET  /health   → Vérification santé (Kubernetes probes)
   GET  /metrics  → Métriques Prometheus
+  POST /token    → Authentification JWT
+  GET  /history  → Historique des requêtes (DB)
   POST /predict  → Prédiction Iris (modèle Scikit-Learn via MLflow)
-  POST /ask      → Système RAG Questions/Réponses (LangChain + Gemini)
-  POST /extract  → [WIP] Extraction intelligente de documents (Phase 12)
-  POST /classify → [WIP] Classification de documents (Phase 13)
+  POST /ask      → Système RAG Questions/Réponses (LangChain + Groq + FAISS)
+  POST /extract  → Extraction intelligente de documents
+  POST /classify → Classification de documents
 """
 
 import logging
 import os
 import time
+from pathlib import Path
 import mlflow
 import mlflow.sklearn
 import pandas as pd
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List
 from prometheus_fastapi_instrumentator import Instrumentator
+from sqlalchemy.orm import Session
 
+from src.monitoring import LLM_REQUEST_DURATION_SECONDS, LLM_REQUESTS_TOTAL
 from src.rag_engine import RAGEngine
+from src.database import init_db, get_db
+from src.models import User, ApiRequestLog
+from src.auth import get_current_user, authenticate_user, create_access_token, get_password_hash
 
 # ─── Charger les variables d'environnement (.env) ─────────────────────────────
 load_dotenv()
@@ -43,6 +54,9 @@ MLFLOW_TRACKING_URI  = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
 EXPERIMENT_NAME      = os.getenv("MLFLOW_EXPERIMENT_NAME", "Iris_Classification")
 MODEL_ARTIFACT_PATH  = os.getenv("MODEL_ARTIFACT_PATH", "random_forest_model")
 RAG_EXPERIMENT_NAME  = os.getenv("RAG_EXPERIMENT_NAME", "RAG_Document_QA")
+BASE_DIR             = Path(__file__).resolve().parents[1]
+FRONTEND_DIR         = BASE_DIR / "frontend"
+FRONTEND_DIST_DIR    = FRONTEND_DIR / "dist"
 
 # ─── Singletons globaux ───────────────────────────────────────────────────────
 _model      = None
@@ -51,10 +65,10 @@ _rag_engine = RAGEngine()
 
 # ─── Schémas Pydantic ─────────────────────────────────────────────────────────
 class IrisFeatures(BaseModel):
-    sepal_length: float = Field(..., gt=0, description="Longueur du sépale en cm", example=5.1)
-    sepal_width:  float = Field(..., gt=0, description="Largeur du sépale en cm",  example=3.5)
-    petal_length: float = Field(..., gt=0, description="Longueur du pétale en cm", example=1.4)
-    petal_width:  float = Field(..., gt=0, description="Largeur du pétale en cm",  example=0.2)
+    sepal_length: float = Field(..., gt=0, description="Longueur du sépale en cm", json_schema_extra={"example": 5.1})
+    sepal_width:  float = Field(..., gt=0, description="Largeur du sépale en cm",  json_schema_extra={"example": 3.5})
+    petal_length: float = Field(..., gt=0, description="Longueur du pétale en cm", json_schema_extra={"example": 1.4})
+    petal_width:  float = Field(..., gt=0, description="Largeur du pétale en cm",  json_schema_extra={"example": 0.2})
 
 class PredictRequest(BaseModel):
     data: List[IrisFeatures] = Field(..., min_length=1, description="Liste de mesures Iris à classifier.")
@@ -65,13 +79,19 @@ class PredictResponse(BaseModel):
     duration_ms:  float
 
 class AskRequest(BaseModel):
-    question: str = Field(..., min_length=5, description="La question à poser aux documents.", example="Combien de jours de congé annuel ont les employés ?")
+    question: str = Field(
+        ...,
+        min_length=5,
+        description="La question à poser aux documents.",
+        json_schema_extra={"example": "Combien de jours de congé annuel ont les employés ?"},
+    )
 
 class AskResponse(BaseModel):
     answer:     str
     sources:    List[str]
     run_id:     str
     duration_ms: float
+    fallback:   bool = False
 
 # ─── Chargement du modèle Iris ────────────────────────────────────────────────
 def _load_best_model() -> None:
@@ -103,12 +123,22 @@ def _load_best_model() -> None:
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Démarrage de l'API — Chargement des modèles ML...")
+    logger.info("Démarrage de l'API — Initialisation de la DB...")
+    init_db()
+    
+    # Créer un admin par défaut si aucun user n'existe
+    db_gen = get_db()
+    db = next(db_gen)
+    if not db.query(User).first():
+        logger.info("Création de l'utilisateur admin par défaut.")
+        admin = User(username="admin", hashed_password=get_password_hash("admin"))
+        db.add(admin)
+        db.commit()
+    db.close()
 
-    # 1. Charger le modèle Iris (toujours)
+    logger.info("Chargement des modèles ML...")
     _load_best_model()
 
-    # 2. Charger le moteur RAG (optionnel — si l'expérience existe)
     try:
         rag_info = _rag_engine.load_from_mlflow(MLFLOW_TRACKING_URI, RAG_EXPERIMENT_NAME)
         logger.info(f"Moteur RAG chargé. run_id={rag_info['run_id']} | chunks={rag_info['num_chunks']}")
@@ -124,18 +154,18 @@ app = FastAPI(
     description=(
         "API complète de la Plateforme MLOps incluant :\n"
         "- **Inférence ML** (RandomForest + MLflow)\n"
-        "- **Système RAG** (LangChain + Gemini + FAISS)\n"
-        "- **Endpoints WIP** : Extraction et Classification de documents\n\n"
+        "- **Système RAG** (LangChain + Groq + FAISS)\n"
+        "- **IA métier** : Extraction et Classification de documents\n\n"
         "Produit final d'un pipeline MLOps complet (Docker + Kubernetes)."
     ),
-    version="3.0.0",
+    version="4.0.0",
     lifespan=lifespan,
 )
 
 # ─── Monitoring Prometheus ─────────────────────────────────────────────────────
 Instrumentator().instrument(app).expose(app)
 
-# ─── CORS ─────────────────────────────────────────────────────────────────────
+# ─── CORS et Sécurité ───────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -143,11 +173,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─── Routes ───────────────────────────────────────────────────────────────────
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
+
+# ─── Routes Publiques ─────────────────────────────────────────────────────────
+
+if FRONTEND_DIST_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST_DIR / "assets"), name="frontend-assets")
+
+@app.get("/logo.png", include_in_schema=False)
+def get_logo():
+    logo_dist = FRONTEND_DIST_DIR / "logo.png"
+    if logo_dist.exists():
+        return FileResponse(logo_dist)
+    logo_pub = FRONTEND_DIR / "public" / "logo.png"
+    if logo_pub.exists():
+        return FileResponse(logo_pub)
+    raise HTTPException(status_code=404, detail="Logo non trouvé")
+
+@app.get("/", include_in_schema=False)
+def web_dashboard():
+    index_path = FRONTEND_DIST_DIR / "index.html"
+    if not index_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Interface React non disponible. Lancez : npm --prefix frontend run build",
+        )
+    return FileResponse(index_path)
 
 @app.get("/health", tags=["Système"])
 def health_check():
-    """Vérifie l'état de l'API et des modèles (Kubernetes probes)."""
     return {
         "status":       "ok",
         "model_loaded": _model is not None,
@@ -156,9 +216,46 @@ def health_check():
         "rag_info":     _rag_engine.run_info,
     }
 
+@app.post("/token", tags=["Auth"])
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# ─── Utilitaires DB ───────────────────────────────────────────────────────────
+def log_request(db: Session, user_id: int, endpoint: str, req_status: str, detail: str, duration_ms: float):
+    log = ApiRequestLog(
+        user_id=user_id,
+        endpoint=endpoint,
+        status=req_status,
+        detail=detail,
+        duration_ms=duration_ms
+    )
+    db.add(log)
+    db.commit()
+
+@app.get("/history", tags=["Système"])
+def get_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    logs = db.query(ApiRequestLog).order_by(ApiRequestLog.created_at.desc()).limit(20).all()
+    return [{
+        "endpoint": l.endpoint,
+        "status": l.status,
+        "detail": l.detail,
+        "duration_ms": l.duration_ms,
+        "at": l.created_at.strftime("%H:%M:%S"),
+        "error": l.status == "Erreur"
+    } for l in logs]
+
+# ─── Routes Sécurisées (Inférence & IA) ───────────────────────────────────────
+
 @app.post("/predict", response_model=PredictResponse, tags=["Inférence ML"])
-def predict(request: PredictRequest, req: Request):
-    """Effectue une classification sur les données Iris fournies."""
+def predict(request: PredictRequest, req: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if _model is None:
         raise HTTPException(status_code=503, detail="Le modèle n'est pas encore chargé.")
     start = time.perf_counter()
@@ -167,77 +264,80 @@ def predict(request: PredictRequest, req: Request):
         df          = pd.DataFrame([item.model_dump() for item in request.data])
         predictions = _model.predict(df)
         labels      = [IRIS_CLASSES[int(p)] for p in predictions]
+        duration_ms = (time.perf_counter() - start) * 1000
+        log_request(db, current_user.id, "/predict", "OK", "Termine", duration_ms)
+        return PredictResponse(predictions=labels, model_run_id=_model_info.get("run_id", "inconnu"), duration_ms=round(duration_ms, 2))
     except Exception as e:
-        logger.error(f"Erreur lors de la prédiction : {e}")
+        log_request(db, current_user.id, "/predict", "Erreur", str(e), 0)
         raise HTTPException(status_code=422, detail=f"Erreur de prédiction : {str(e)}")
-    duration_ms = (time.perf_counter() - start) * 1000
-    logger.info(f"Prédiction : {labels} | {duration_ms:.2f}ms | {req.client.host}")
-    return PredictResponse(
-        predictions  = labels,
-        model_run_id = _model_info.get("run_id", "inconnu"),
-        duration_ms  = round(duration_ms, 2),
-    )
+
 
 @app.post("/ask", response_model=AskResponse, tags=["RAG"])
-def ask(request: AskRequest, req: Request):
-    """
-    Pose une question aux documents de l'entreprise.
-    Le système RAG (Gemini + FAISS) cherche la réponse dans les documents ingérés.
-    """
+def ask(request: AskRequest, req: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if not _rag_engine.is_loaded:
-        raise HTTPException(
-            status_code=503,
-            detail="Le moteur RAG n'est pas disponible. Lancez d'abord : python src/train_rag.py"
-        )
+        raise HTTPException(status_code=503, detail="Moteur RAG non disponible.")
     start = time.perf_counter()
     try:
         result = _rag_engine.ask(request.question)
     except Exception as e:
-        logger.error(f"Erreur RAG : {e}")
+        LLM_REQUESTS_TOTAL.labels(endpoint="ask", status="error").inc()
+        log_request(db, current_user.id, "/ask", "Erreur", str(e), 0)
         raise HTTPException(status_code=500, detail=f"Erreur du moteur RAG : {str(e)}")
+        
     duration_ms = (time.perf_counter() - start) * 1000
-    logger.info(f"RAG : {duration_ms:.2f}ms | client={req.client.host}")
+    LLM_REQUEST_DURATION_SECONDS.labels(endpoint="ask").observe(duration_ms / 1000)
+    
+    fallback = result.get("fallback", False)
+    req_status = "Fallback" if fallback else "OK"
+    LLM_REQUESTS_TOTAL.labels(endpoint="ask", status="fallback" if fallback else "success").inc()
+    log_request(db, current_user.id, "/ask", req_status, f"{duration_ms:.2f} ms", duration_ms)
+    
     return AskResponse(
-        answer      = result["answer"],
-        sources     = result["sources"],
-        run_id      = _rag_engine.run_info.get("run_id", "inconnu"),
-        duration_ms = round(duration_ms, 2),
+        answer=result["answer"],
+        sources=result["sources"],
+        run_id=_rag_engine.run_info.get("run_id", "inconnu"),
+        duration_ms=round(duration_ms, 2),
+        fallback=fallback,
     )
 
 class ClassifyRequest(BaseModel):
-    text: str = Field(..., min_length=10, description="Le texte du document à classifier.")
-    categories: List[str] = Field(..., min_length=2, description="Liste des catégories possibles.")
+    text: str = Field(..., min_length=10)
+    categories: List[str] = Field(..., min_length=2)
 
 class ExtractRequest(BaseModel):
-    text: str = Field(..., min_length=10, description="Le texte du document dont on veut extraire les informations.")
+    text: str = Field(..., min_length=10)
 
 
-# ─── Initialisation des moteurs NLP ────────────────────────────────────────────
 from src.nlp_engine import DocumentClassifier, DocumentExtractor
 _classifier = DocumentClassifier()
 _extractor = DocumentExtractor()
 
 
 @app.post("/extract", tags=["Extraction"])
-async def extract_document(request: ExtractRequest, req: Request):
-    """Extraction intelligente d'entités d'un document avec Ollama."""
+async def extract_document(request: ExtractRequest, req: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     start = time.perf_counter()
     result = _extractor.extract(request.text)
     duration_ms = (time.perf_counter() - start) * 1000
-    logger.info(f"Extraction : {duration_ms:.2f}ms | client={req.client.host}")
-    return {
-        "extracted_data": result,
-        "duration_ms": round(duration_ms, 2)
-    }
+    LLM_REQUEST_DURATION_SECONDS.labels(endpoint="extract").observe(duration_ms / 1000)
+    
+    fallback = _extractor.last_error is not None
+    req_status = "Fallback" if fallback else "OK"
+    LLM_REQUESTS_TOTAL.labels(endpoint="extract", status="fallback" if fallback else "success").inc()
+    log_request(db, current_user.id, "/extract", req_status, f"{duration_ms:.2f} ms", duration_ms)
+    
+    return {"extracted_data": result, "duration_ms": round(duration_ms, 2), "fallback": fallback}
+
 
 @app.post("/classify", tags=["Classification"])
-async def classify_document(request: ClassifyRequest, req: Request):
-    """Classification de documents Zero-Shot avec Ollama."""
+async def classify_document(request: ClassifyRequest, req: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     start = time.perf_counter()
     category = _classifier.classify(request.text, request.categories)
     duration_ms = (time.perf_counter() - start) * 1000
-    logger.info(f"Classification : {category} | {duration_ms:.2f}ms | client={req.client.host}")
-    return {
-        "category": category,
-        "duration_ms": round(duration_ms, 2)
-    }
+    LLM_REQUEST_DURATION_SECONDS.labels(endpoint="classify").observe(duration_ms / 1000)
+    
+    fallback = _classifier.last_error is not None
+    req_status = "Fallback" if fallback else "OK"
+    LLM_REQUESTS_TOTAL.labels(endpoint="classify", status="fallback" if fallback else "success").inc()
+    log_request(db, current_user.id, "/classify", req_status, f"{duration_ms:.2f} ms", duration_ms)
+    
+    return {"category": category, "duration_ms": round(duration_ms, 2), "fallback": fallback}

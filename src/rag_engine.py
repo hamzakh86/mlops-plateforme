@@ -24,6 +24,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_huggingface import HuggingFaceEmbeddings
 from src.llm_provider import get_llm
+from src.monitoring import LLM_FALLBACKS_TOTAL, RAG_RETRIEVED_DOCUMENTS
 
 logger = logging.getLogger(__name__)
 
@@ -145,18 +146,36 @@ class RAGEngine:
 
         logger.info(f"❓ Question : {question[:80]}...")
 
-        # 1. Retrieve the documents
+        # 1. Retrieve the documents locally
         docs = self._retriever.invoke(question)
+        RAG_RETRIEVED_DOCUMENTS.observe(len(docs))
 
-        # 2. Generate the answer using the chain
-        answer = self._chain.invoke(question)
+        # 2. Generate the answer using Groq, with a degraded fallback if needed
+        fallback = False
+        try:
+            answer = self._chain.invoke(question)
+        except Exception as e:
+            logger.error(f"Erreur LLM pendant la génération RAG: {e}")
+            LLM_FALLBACKS_TOTAL.labels(endpoint="ask", reason=type(e).__name__).inc()
+            fallback = True
+            if docs:
+                answer = (
+                    "Le service LLM Groq est indisponible ou limité pour le moment. "
+                    "Voici les sources locales les plus pertinentes retrouvées par FAISS ; "
+                    "relancez la question lorsque le service sera disponible."
+                )
+            else:
+                answer = (
+                    "Le service LLM Groq est indisponible ou limité pour le moment, "
+                    "et aucun document pertinent n'a été retrouvé localement."
+                )
 
         # 3. Extract the sources
         sources = [doc.metadata.get("source", "Inconnu") for doc in docs]
         unique_sources = list(dict.fromkeys(sources))
 
         logger.info(f"✅ Réponse générée. Sources : {unique_sources}")
-        return {"answer": answer, "sources": unique_sources}
+        return {"answer": answer, "sources": unique_sources, "fallback": fallback}
 
     @property
     def is_loaded(self) -> bool:

@@ -1,0 +1,37 @@
+POLITIQUE INTERNE - SECURITE ET OPERATIONS
+Document : Supervision, incidents et bonnes pratiques
+Version : 1.0 - Aout 2026
+
+==========================================================
+1. MONITORING
+==========================================================
+
+Les services exposes en production doivent fournir des metriques exploitables
+par Prometheus. Les indicateurs prioritaires sont le nombre de requetes, la
+latence, le taux d'erreur, l'etat de chargement des modeles et la disponibilite
+des dependances externes.
+
+Grafana est utilise pour construire des tableaux de bord lisibles par l'equipe
+technique et par l'encadrement. Les dashboards doivent afficher la latence par
+endpoint, les erreurs HTTP et les evenements de fallback LLM.
+
+==========================================================
+2. GESTION DES INCIDENTS LLM
+==========================================================
+
+En cas d'indisponibilite de l'API Groq, de quota depasse ou d'erreur reseau,
+la plateforme doit retourner une reponse explicite sans interrompre le service.
+Pour le RAG, la recherche FAISS locale reste disponible et les sources les plus
+pertinentes doivent etre retournees meme si la generation LLM echoue.
+
+Pour l'extraction et la classification, le service doit journaliser l'erreur,
+incrementer une metrique Prometheus et retourner une structure de reponse stable
+afin de ne pas casser les clients de l'API.
+
+==========================================================
+3. SECURITE DES SECRETS
+==========================================================
+
+Les cles API ne doivent jamais etre versionnees. Le fichier .env reste local et
+doit etre ignore par Git. En cas d'exposition accidentelle, la cle concernee
+doit etre revoquee puis remplacee immediatement.
