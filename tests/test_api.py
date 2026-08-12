@@ -5,10 +5,24 @@ Tests d'intégration pour l'API FastAPI (serve.py).
 """
 
 import pytest
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 from src.models import User
 
+
+# ── Helpers JWT ────────────────────────────────────────────────────────────────
+
+def _make_token(username: str = "admin") -> str:
+    """Génère un token JWT valide pour les tests (sans base de données)."""
+    from src.auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+    return create_access_token(
+        data={"sub": username},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+
+
+# ── Fixtures ───────────────────────────────────────────────────────────────────
 
 @pytest.fixture
 def mock_model():
@@ -56,6 +70,15 @@ def client(mock_model, mock_user):
             yield client
 
 
+@pytest.fixture
+def auth_headers():
+    """Headers d'authentification Bearer JWT pour les endpoints protégés."""
+    token = _make_token()
+    return {"Authorization": f"Bearer {token}"}
+
+
+# ── Tests ──────────────────────────────────────────────────────────────────────
+
 class TestHealthEndpoint:
     """Tests pour l'endpoint GET /health."""
 
@@ -88,7 +111,7 @@ class TestFrontendEndpoint:
 class TestPredictEndpoint:
     """Tests pour l'endpoint POST /predict."""
 
-    def test_predict_valid_input(self, client):
+    def test_predict_valid_input(self, client, auth_headers):
         """Une requête valide doit retourner les prédictions correctes."""
         payload = {
             "data": [
@@ -96,7 +119,7 @@ class TestPredictEndpoint:
                 {"sepal_length": 6.7, "sepal_width": 3.0, "petal_length": 5.2, "petal_width": 2.3},
             ]
         }
-        response = client.post("/predict", json=payload)
+        response = client.post("/predict", json=payload, headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert "predictions" in data
@@ -106,37 +129,37 @@ class TestPredictEndpoint:
         assert data["predictions"][0] == "setosa"
         assert data["predictions"][1] == "virginica"
 
-    def test_predict_invalid_input_missing_field(self, client):
+    def test_predict_invalid_input_missing_field(self, client, auth_headers):
         """Une requête avec un champ manquant doit retourner 422."""
         payload = {
             "data": [
                 {"sepal_length": 5.1, "sepal_width": 3.5}  # petal_length et petal_width manquants
             ]
         }
-        response = client.post("/predict", json=payload)
+        response = client.post("/predict", json=payload, headers=auth_headers)
         assert response.status_code == 422
 
-    def test_predict_invalid_input_negative_values(self, client):
+    def test_predict_invalid_input_negative_values(self, client, auth_headers):
         """Des valeurs négatives (gt=0) doivent retourner 422."""
         payload = {
             "data": [
                 {"sepal_length": -1.0, "sepal_width": 3.5, "petal_length": 1.4, "petal_width": 0.2}
             ]
         }
-        response = client.post("/predict", json=payload)
+        response = client.post("/predict", json=payload, headers=auth_headers)
         assert response.status_code == 422
 
-    def test_predict_empty_data_list(self, client):
+    def test_predict_empty_data_list(self, client, auth_headers):
         """Une liste vide de données doit retourner 422."""
         payload = {"data": []}
-        response = client.post("/predict", json=payload)
+        response = client.post("/predict", json=payload, headers=auth_headers)
         assert response.status_code == 422
 
 
 class TestExtractEndpoint:
     """Tests pour l'endpoint POST /extract."""
 
-    def test_extract_endpoint(self, client):
+    def test_extract_endpoint(self, client, auth_headers):
         with patch("src.serve._extractor.extract") as mock_extract:
             mock_extract.return_value = {
                 "montant_total": 1250.5,
@@ -146,22 +169,23 @@ class TestExtractEndpoint:
             response = client.post(
                 "/extract",
                 json={"text": "Facture ITGate Group du 10/08/2026. Montant: 1250.50 TND."},
+                headers=auth_headers,
             )
             assert response.status_code == 200
             body = response.json()
             assert body["extracted_data"]["fournisseur"] == "ITGate Group"
             assert "duration_ms" in body
 
-    def test_extract_validation_error_short_text(self, client):
+    def test_extract_validation_error_short_text(self, client, auth_headers):
         # min_length=10 sur ExtractRequest.text
-        response = client.post("/extract", json={"text": "court"})
+        response = client.post("/extract", json={"text": "court"}, headers=auth_headers)
         assert response.status_code == 422
 
 
 class TestClassifyEndpoint:
     """Tests pour l'endpoint POST /classify."""
 
-    def test_classify_endpoint(self, client):
+    def test_classify_endpoint(self, client, auth_headers):
         with patch("src.serve._classifier.classify") as mock_classify:
             mock_classify.return_value = "Facture"
             response = client.post(
@@ -170,23 +194,26 @@ class TestClassifyEndpoint:
                     "text": "Facture ITGate Group du 10/08/2026. Montant total: 1250.50 TND.",
                     "categories": ["Facture", "CV", "Contrat", "Rapport"],
                 },
+                headers=auth_headers,
             )
             assert response.status_code == 200
             body = response.json()
             assert body["category"] == "Facture"
             assert "duration_ms" in body
 
-    def test_classify_validation_error_single_category(self, client):
+    def test_classify_validation_error_single_category(self, client, auth_headers):
         # min_length=2 sur ClassifyRequest.categories
         response = client.post(
             "/classify",
             json={"text": "texte suffisamment long pour passer", "categories": ["Facture"]},
+            headers=auth_headers,
         )
         assert response.status_code == 422
 
-    def test_classify_validation_error_short_text(self, client):
+    def test_classify_validation_error_short_text(self, client, auth_headers):
         response = client.post(
             "/classify",
             json={"text": "court", "categories": ["Facture", "CV"]},
+            headers=auth_headers,
         )
         assert response.status_code == 422
