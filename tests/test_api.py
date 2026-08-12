@@ -5,7 +5,7 @@ Tests d'intégration pour l'API FastAPI (serve.py).
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from src.models import User
 
@@ -31,6 +31,8 @@ def mock_user():
 def client(mock_model, mock_user):
     """Client de test FastAPI avec le modèle mocké."""
     import src.serve as serve_module
+    import src.auth as auth_module
+    
     serve_module._model = mock_model
     serve_module._model_info = {
         "run_id": "test-run-id-12345",
@@ -38,11 +40,13 @@ def client(mock_model, mock_user):
         "experiment": "Iris_Classification",
     }
     from fastapi.testclient import TestClient
+    
     # Le lifespan FastAPI est exécuté par TestClient : on neutralise les chargements externes.
     with patch("src.serve._load_best_model"), \
          patch.object(serve_module._rag_engine, "load_from_mlflow",
                      return_value={"run_id": "test-rag-run", "num_chunks": 0}), \
-         patch("src.auth.get_current_user", return_value=mock_user):
+         patch.object(auth_module.oauth2_scheme, "__call__", return_value="fake-token"), \
+         patch("src.auth.get_current_user", new_callable=AsyncMock, return_value=mock_user):
         serve_module._model = mock_model
         serve_module._model_info = {
             "run_id": "test-run-id-12345",
