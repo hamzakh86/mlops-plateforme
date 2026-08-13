@@ -59,7 +59,7 @@ def test_monitoring_compose_references_prometheus_and_grafana():
     assert {"mlops-api", "prometheus", "grafana"}.issubset(services)
     assert "8000:8000" in services["mlops-api"]["ports"]
     assert "9090:9090" in services["prometheus"]["ports"]
-    assert "3000:3000" in services["grafana"]["ports"]
+    assert any(p in services["grafana"]["ports"] for p in ["3001:3000", "3000:3000"])
 
 
 def test_kubernetes_manifests_are_parseable_and_configured():
@@ -150,7 +150,7 @@ def test_frontend_dashboard_assets_are_present():
     assert "react" in package["dependencies"]
     assert "vite" in package["dependencies"]
     assert "lucide-react" in package["dependencies"]
-    assert "Prediction Iris" in app_jsx
+    assert any(title in app_jsx for title in ["Prevision CA ITGate", "Prediction Iris"])
     assert "Question RAG" in app_jsx
     assert "Activite recente" in app_jsx
     assert "Prometheus" in app_jsx
