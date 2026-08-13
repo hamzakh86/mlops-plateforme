@@ -265,9 +265,10 @@ export default function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
+        {/* ── Brand ── */}
         <div className="brand">
           <div className="brand-mark" style={{ background: "transparent", border: "none" }}>
-            <img src={logoImg} alt="ITGate Logo" style={{ width: "32px", height: "32px", objectFit: "contain" }} />
+            <img src={logoImg} alt="ITGate Logo" style={{ width: "36px", height: "36px", objectFit: "contain", filter: "drop-shadow(0 2px 8px rgba(94,234,212,0.4))" }} />
           </div>
           <div>
             <span>ITGate Group</span>
@@ -275,31 +276,57 @@ export default function App() {
           </div>
         </div>
 
+        {/* ── Status Badge ── */}
+        <div className="sidebar-status">
+          <span className="sidebar-status-dot"></span>
+          <span className="sidebar-status-text">Système Opérationnel</span>
+          <span className="sidebar-version">v3.0</span>
+        </div>
+
+        {/* ── Nav Section: Général ── */}
+        <p className="nav-section-label">Général</p>
         <nav className="nav-list" aria-label="Navigation principale">
           <button className={activeSection === "dashboard" ? "active" : ""} onClick={() => setActiveSection("dashboard")}>
-            <LayoutDashboard size={18} /> Dashboard
+            <LayoutDashboard size={17} />
+            <span>Dashboard</span>
           </button>
+
+          {/* ── Nav Section: Intelligence Artificielle ── */}
+          <p className="nav-section-label" style={{ marginTop: "14px" }}>IA & Prévision</p>
           <button className={activeSection === "ml" ? "active" : ""} onClick={() => setActiveSection("ml")}>
-            <BrainCircuit size={18} /> Inference ML
+            <BrainCircuit size={17} />
+            <span>Prévision CA ITGate</span>
+            <span className="nav-badge">ML</span>
           </button>
           <button className={activeSection === "documents" ? "active" : ""} onClick={() => setActiveSection("documents")}>
-            <FileSearch size={18} /> IA documents
+            <FileSearch size={17} />
+            <span>IA & Documents</span>
+            <span className="nav-badge">RAG</span>
           </button>
+
+          {/* ── Nav Section: DevOps ── */}
+          <p className="nav-section-label" style={{ marginTop: "14px" }}>DevOps & Ops</p>
           <button className={activeSection === "ops" ? "active" : ""} onClick={() => setActiveSection("ops")}>
-            <Activity size={18} /> Observabilite
+            <Activity size={17} />
+            <span>Observabilité</span>
           </button>
           <button className={activeSection === "deploy" ? "active" : ""} onClick={() => setActiveSection("deploy")}>
-            <Rocket size={18} /> Deploiement
+            <Rocket size={17} />
+            <span>Déploiement K8s</span>
           </button>
         </nav>
+
         <div className="sidebar-footer">
           <div className="user-info">
             <div className="user-avatar"><User size={16} /></div>
-            <span>admin</span>
+            <div>
+              <span style={{ display: "block", fontWeight: 700 }}>admin</span>
+              <span style={{ display: "block", fontSize: "0.72rem", color: "rgba(255,255,255,0.45)" }}>Administrateur</span>
+            </div>
           </div>
           <button className="logout-btn" onClick={logout} title="Se déconnecter">
             <LogOut size={16} />
-            Déconnexion
+            Se déconnecter
           </button>
         </div>
       </aside>
