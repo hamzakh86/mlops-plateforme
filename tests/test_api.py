@@ -28,7 +28,7 @@ def _make_token(username: str = "admin") -> str:
 def mock_model():
     """Modèle mocké pour les tests (pas besoin de MLflow en cours)."""
     model = MagicMock()
-    model.predict.return_value = [0, 2]  # setosa, virginica
+    model.predict.side_effect = lambda df: [75400.0] * len(df)
     return model
 
 
@@ -49,8 +49,8 @@ def client(mock_model, mock_user):
     serve_module._model = mock_model
     serve_module._model_info = {
         "run_id": "test-run-id-12345",
-        "accuracy": 0.95,
-        "experiment": "Iris_Classification",
+        "r2": 0.95,
+        "experiment": "ITGate_Revenue_Forecast",
     }
     
     from fastapi.testclient import TestClient

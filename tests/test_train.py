@@ -6,47 +6,34 @@ Tests unitaires pour le pipeline d'entraînement ML (train.py).
 
 import subprocess
 import sys
+import os
 import pytest
-import mlflow
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.datasets import load_iris
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from src.train import prepare_data
 
 
 class TestTrainPipeline:
-    """Tests pour les fonctions du pipeline d'entraînement."""
+    """Tests pour les fonctions du pipeline d'entraînement ITGate Revenue Forecast."""
 
-    def test_iris_dataset_loads_correctly(self):
-        """Vérifie que le dataset Iris se charge avec les bonnes dimensions."""
-        iris = load_iris()
-        X, y = iris.data, iris.target
-        assert X.shape == (150, 4), "Le dataset Iris doit avoir 150 lignes et 4 features"
-        assert len(np.unique(y)) == 3, "Il doit y avoir 3 classes"
-        assert y.min() == 0 and y.max() == 2
+    def test_revenue_dataset_loads_correctly(self):
+        """Vérifie que le dataset ITGate Revenue multi-varié se charge avec les bonnes dimensions."""
+        X_train, X_test, y_train, y_test, feature_cols, df = prepare_data(lags=3)
+        assert len(feature_cols) == 6, "Le dataset doit comporter 6 features (3 métier + 3 lags)"
+        assert len(X_train) > 0, "Les données d'entraînement ne doivent pas être vides"
+        assert len(X_test) == 12, "Le jeu de test doit contenir 12 mois"
 
     def test_model_trains_and_predicts(self):
-        """Vérifie qu'un RandomForest s'entraîne et produit des prédictions valides."""
-        iris = load_iris()
-        X, y = iris.data, iris.target
-        model = RandomForestClassifier(n_estimators=10, random_state=42)
-        model.fit(X, y)
-        predictions = model.predict(X[:5])
-        assert len(predictions) == 5
-        assert all(p in [0, 1, 2] for p in predictions)
-
-    def test_model_accuracy_above_threshold(self):
-        """Vérifie que le modèle atteint un minimum d'accuracy sur Iris."""
-        from sklearn.model_selection import train_test_split
-        from sklearn.metrics import accuracy_score
-        iris = load_iris()
-        X, y = iris.data, iris.target
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
-        )
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        """Vérifie qu'un RandomForestRegressor s'entraîne et produit des prédictions financières valides."""
+        X_train, X_test, y_train, y_test, feature_cols, df = prepare_data(lags=3)
+        model = RandomForestRegressor(n_estimators=10, random_state=42)
         model.fit(X_train, y_train)
-        acc = accuracy_score(y_test, model.predict(X_test))
-        assert acc >= 0.85, f"Accuracy trop faible : {acc:.2f} (minimum requis: 0.85)"
+        predictions = model.predict(X_test[:5])
+        assert len(predictions) == 5
+        assert all(p > 0 for p in predictions)
 
     def test_train_script_runs_successfully(self):
         """Vérifie que le script train.py s'exécute sans erreur."""
