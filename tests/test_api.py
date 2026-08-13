@@ -112,11 +112,17 @@ class TestPredictEndpoint:
     """Tests pour l'endpoint POST /predict."""
 
     def test_predict_valid_input(self, client, auth_headers):
-        """Une requête valide doit retourner les prédictions correctes."""
+        """Une requête valide doit retourner les prédictions financières du chiffre d'affaires."""
         payload = {
             "data": [
-                {"sepal_length": 5.1, "sepal_width": 3.5, "petal_length": 1.4, "petal_width": 0.2},
-                {"sepal_length": 6.7, "sepal_width": 3.0, "petal_length": 5.2, "petal_width": 2.3},
+                {
+                    "num_engineers": 45,
+                    "active_projects": 16,
+                    "avg_contract_value": 4800.0,
+                    "lag_1": 72500.0,
+                    "lag_2": 68000.0,
+                    "lag_3": 65400.0
+                }
             ]
         }
         response = client.post("/predict", json=payload, headers=auth_headers)
@@ -125,25 +131,14 @@ class TestPredictEndpoint:
         assert "predictions" in data
         assert "model_run_id" in data
         assert "duration_ms" in data
-        assert len(data["predictions"]) == 2
-        assert data["predictions"][0] == "setosa"
-        assert data["predictions"][1] == "virginica"
+        assert len(data["predictions"]) == 1
+        assert isinstance(data["predictions"][0], (int, float))
 
     def test_predict_invalid_input_missing_field(self, client, auth_headers):
         """Une requête avec un champ manquant doit retourner 422."""
         payload = {
             "data": [
-                {"sepal_length": 5.1, "sepal_width": 3.5}  # petal_length et petal_width manquants
-            ]
-        }
-        response = client.post("/predict", json=payload, headers=auth_headers)
-        assert response.status_code == 422
-
-    def test_predict_invalid_input_negative_values(self, client, auth_headers):
-        """Des valeurs négatives (gt=0) doivent retourner 422."""
-        payload = {
-            "data": [
-                {"sepal_length": -1.0, "sepal_width": 3.5, "petal_length": 1.4, "petal_width": 0.2}
+                {"lag_1": 72500.0}  # champs manquants
             ]
         }
         response = client.post("/predict", json=payload, headers=auth_headers)
