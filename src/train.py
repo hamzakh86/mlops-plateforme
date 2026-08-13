@@ -3,14 +3,15 @@ import logging
 import os
 import mlflow
 import mlflow.sklearn
+import pandas as pd
+import numpy as np
 from typing import Tuple
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-)
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from numpy import ndarray
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from src.drift import save_baseline_stats
 
 # ─── Logger ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -20,82 +21,68 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ─── Configuration (lecture depuis variables d'environnement, avec valeurs par défaut) ──
+# ─── Configuration ─────────────────────────────────────────────────────────────
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
-EXPERIMENT_NAME     = os.getenv("MLFLOW_EXPERIMENT_NAME", "Iris_Classification")
-TEST_SIZE           = float(os.getenv("TEST_SIZE", "0.2"))
+EXPERIMENT_NAME     = os.getenv("MLFLOW_EXPERIMENT_NAME", "ITGate_Revenue_Forecast")
 RANDOM_STATE        = int(os.getenv("RANDOM_STATE", "42"))
+DATA_PATH           = "data/raw/itgate_revenue_multivariate.csv"
 
 
 def parse_arguments() -> argparse.Namespace:
-    """Analyse les arguments passés en ligne de commande.
-    
-    Returns:
-        argparse.Namespace: Les arguments parsés.
-    """
     parser = argparse.ArgumentParser(
-        description="Script d'entraînement MLOps — Plateforme IA ITGate.",
+        description="Script d'entraînement MLOps — Time Series Multi-varié ITGate.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument("--n_estimators", type=int, default=100,
                         help="Nombre d'arbres dans la forêt aléatoire.")
-    parser.add_argument("--max_depth", type=int, default=None,
-                        help="Profondeur maximale de chaque arbre (None = illimitée).")
-    parser.add_argument("--run_name", type=str, default="RandomForest_Iris",
-                        help="Nom identifiable du Run dans l'interface MLflow.")
+    parser.add_argument("--max_depth", type=int, default=10,
+                        help="Profondeur maximale de chaque arbre.")
+    parser.add_argument("--lags", type=int, default=3,
+                        help="Nombre de lags temporels du chiffre d'affaires.")
+    parser.add_argument("--run_name", type=str, default="RF_Multivariate_Revenue",
+                        help="Nom du Run MLflow.")
     return parser.parse_args()
 
 
-def prepare_data() -> Tuple[ndarray, ndarray, ndarray, ndarray]:
-    """Charge le dataset Iris et le sépare en ensembles d'entraînement et de test.
+def prepare_data(lags: int) -> Tuple[ndarray, ndarray, ndarray, ndarray, list, pd.DataFrame]:
+    logger.info(f"Chargement du dataset multi-varié ITGate depuis {DATA_PATH}...")
+    df = pd.read_csv(DATA_PATH)
     
-    Returns:
-        Tuple contenant X_train, X_test, y_train, y_test.
-    """
-    logger.info("Chargement du dataset Iris (150 observations, 4 features, 3 classes)...")
-    data = load_iris()
-    X, y = data.data, data.target
+    # Création des Lags sur le revenu
+    for i in range(1, lags + 1):
+        df[f"lag_{i}"] = df["revenue"].shift(i)
+    
+    df = df.dropna().reset_index(drop=True)
+    
+    feature_cols = ["num_engineers", "active_projects", "avg_contract_value"] + [f"lag_{i}" for i in range(1, lags + 1)]
+    X = df[feature_cols].values
+    y = df["revenue"].values
+    
+    # Sauvegarde des statistiques de référence pour le Data Drift
+    save_baseline_stats(df, feature_cols)
+    
+    test_size = 12
+    X_train, X_test = X[:-test_size], X[-test_size:]
+    y_train, y_test = y[:-test_size], y[-test_size:]
 
-    logger.info(f"Séparation Train/Test ({int((1-TEST_SIZE)*100)}/{int(TEST_SIZE*100)}) avec random_state={RANDOM_STATE}...")
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
-    )
-    logger.info(f"Données prêtes — Train: {X_train.shape[0]} | Test: {X_test.shape[0]} exemples")
-    return X_train, X_test, y_train, y_test
+    logger.info(f"Données prêtes — Features: {feature_cols} | Train: {X_train.shape[0]} | Test: {X_test.shape[0]}")
+    return X_train, X_test, y_train, y_test, feature_cols, df
 
 
 def compute_metrics(y_true: ndarray, y_pred: ndarray) -> dict:
-    """Calcule les métriques de classification.
-    
-    Args:
-        y_true: Labels réels.
-        y_pred: Labels prédits.
-    
-    Returns:
-        dict: Dictionnaire des métriques calculées.
-    """
     return {
-        "accuracy":  round(accuracy_score(y_true, y_pred), 4),
-        "precision": round(precision_score(y_true, y_pred, average="macro"), 4),
-        "recall":    round(recall_score(y_true, y_pred, average="macro"), 4),
-        "f1_score":  round(f1_score(y_true, y_pred, average="macro"), 4),
+        "rmse": round(float(np.sqrt(mean_squared_error(y_true, y_pred))), 2),
+        "mae":  round(float(mean_absolute_error(y_true, y_pred)), 2),
+        "r2":   round(float(r2_score(y_true, y_pred)), 4),
     }
 
 
 def train_and_log(
     X_train: ndarray, X_test: ndarray,
     y_train: ndarray, y_test: ndarray,
+    feature_cols: list,
     args: argparse.Namespace
 ) -> str:
-    """Entraîne le modèle RandomForest et log toute l'expérience dans MLflow.
-    
-    Args:
-        X_train, X_test, y_train, y_test: Données d'entraînement et de test.
-        args: Hyperparamètres passés en ligne de commande.
-    
-    Returns:
-        str: Le run_id MLflow de l'expérience.
-    """
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     mlflow.set_experiment(EXPERIMENT_NAME)
     logger.info(f"MLflow Tracking URI : {MLFLOW_TRACKING_URI} | Expérience : {EXPERIMENT_NAME}")
@@ -104,60 +91,53 @@ def train_and_log(
         run_id = run.info.run_id
         logger.info(f"Début du Run MLflow — run_id={run_id}")
 
-        # ── 1. Log des hyperparamètres ──────────────────────────────────────
         params = {
             "n_estimators": args.n_estimators,
             "max_depth":    args.max_depth,
+            "lags":         args.lags,
+            "num_features": len(feature_cols),
             "random_state": RANDOM_STATE,
-            "test_size":    TEST_SIZE,
         }
         mlflow.log_params(params)
-        logger.info(f"Hyperparamètres enregistrés : {params}")
 
-        # ── 2. Entraînement ─────────────────────────────────────────────────
-        logger.info("Entraînement du modèle RandomForestClassifier...")
-        model = RandomForestClassifier(
+        logger.info("Entraînement du modèle RandomForestRegressor multi-varié...")
+        model = RandomForestRegressor(
             n_estimators=args.n_estimators,
             max_depth=args.max_depth,
             random_state=RANDOM_STATE,
-            n_jobs=-1  # Utilise tous les cœurs CPU disponibles
+            n_jobs=-1
         )
         model.fit(X_train, y_train)
         logger.info("Modèle entraîné avec succès.")
 
-        # ── 3. Évaluation ───────────────────────────────────────────────────
         predictions = model.predict(X_test)
         metrics = compute_metrics(y_test, predictions)
-        logger.info(f"Métriques : {metrics}")
+        logger.info(f"Métriques Évaluation : {metrics}")
         mlflow.log_metrics(metrics)
 
-        # ── 4. Tag descriptif pour retrouver facilement dans l'UI ──────────
         mlflow.set_tags({
-            "model_type":  "RandomForestClassifier",
-            "dataset":     "Iris",
+            "model_type":  "RandomForestRegressor_Multivariate",
+            "dataset":     "ITGate_Revenue_Multivariate",
             "environment": "development",
         })
 
-        # ── 5. Enregistrement du modèle avec signature ──────────────────────
         signature = mlflow.models.signature.infer_signature(X_train, predictions)
         mlflow.sklearn.log_model(
             sk_model=model,
-            artifact_path="random_forest_model",
+            artifact_path="random_forest_ts_model",
             signature=signature,
             input_example=X_train[:5],
         )
-        logger.info(f"Modèle enregistré dans MLflow. run_id={run_id}")
+        logger.info(f"Modèle multi-varié enregistré dans MLflow. run_id={run_id}")
 
     return run_id
 
 
 def main() -> None:
-    """Point d'entrée principal du pipeline d'entraînement."""
-    args   = parse_arguments()
-    X_train, X_test, y_train, y_test = prepare_data()
-    run_id = train_and_log(X_train, X_test, y_train, y_test, args)
+    args = parse_arguments()
+    X_train, X_test, y_train, y_test, feature_cols, _ = prepare_data(args.lags)
+    run_id = train_and_log(X_train, X_test, y_train, y_test, feature_cols, args)
     logger.info(f"Pipeline terminé avec succès. run_id={run_id}")
-    logger.info(f"Consultez les résultats sur : mlflow ui --backend-store-uri {MLFLOW_TRACKING_URI}")
 
 
 if __name__ == "__main__":

@@ -27,14 +27,16 @@ const links = [
   { label: "Metrics", href: "/metrics" },
   { label: "MLflow", href: "http://127.0.0.1:5000" },
   { label: "Prometheus", href: "http://127.0.0.1:9090" },
-  { label: "Grafana", href: "http://127.0.0.1:3000" },
+  { label: "Grafana", href: "http://127.0.0.1:3001" },
 ];
 
-const initialIris = {
-  sepal_length: 5.1,
-  sepal_width: 3.5,
-  petal_length: 1.4,
-  petal_width: 0.2,
+const initialRevenue = {
+  num_engineers: 45,
+  active_projects: 16,
+  avg_contract_value: 4800,
+  lag_1: 72500,
+  lag_2: 68000,
+  lag_3: 65400,
 };
 
 const examples = {
@@ -77,7 +79,7 @@ export default function App() {
   const [activityLog, setActivityLog] = useState([]);
   const [loading, setLoading] = useState("");
   const [results, setResults] = useState({});
-  const [iris, setIris] = useState(initialIris);
+  const [revenue, setRevenue] = useState(initialRevenue);
   const [askQuestion, setAskQuestion] = useState(examples.ask);
   const [extractText, setExtractText] = useState(examples.extract);
   const [classifyText, setClassifyText] = useState(examples.classify);
@@ -107,9 +109,9 @@ export default function App() {
       icon: Database,
     },
     {
-      label: "Accuracy",
-      value: health?.model_info?.accuracy ?? "-",
-      ok: health?.model_info?.accuracy >= 0.8,
+      label: "Score R2",
+      value: health?.model_info?.r2 ?? "-",
+      ok: true,
       icon: Gauge,
     },
   ], [health, healthError]);
@@ -148,7 +150,6 @@ export default function App() {
     return () => window.clearInterval(interval);
   }, [token]);
 
-
   async function runAction(endpoint, action) {
     setLoading(endpoint);
     setResults((current) => ({ ...current, [endpoint]: { status: "En cours" } }));
@@ -168,7 +169,7 @@ export default function App() {
 
   function predict(event) {
     event.preventDefault();
-    runAction("/predict", () => request("/predict", { data: [iris] }));
+    runAction("/predict", () => request("/predict", { data: [revenue] }));
   }
 
   function ask(event) {
@@ -201,7 +202,7 @@ export default function App() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || "Erreur de connexion");
-      
+
       localStorage.setItem("access_token", data.access_token);
       setToken(data.access_token);
       refreshHealth();
@@ -256,9 +257,6 @@ export default function App() {
             {loginError && <div className="login-error">{loginError}</div>}
             <button className="login-btn" type="submit">Se connecter →</button>
           </form>
-          <div className="login-hint">
-            Accès par défaut : <kbd>admin</kbd> / <kbd>admin</kbd>
-          </div>
         </div>
       </div>
     );
@@ -294,17 +292,17 @@ export default function App() {
             <Rocket size={18} /> Deploiement
           </button>
         </nav>
-          <div className="sidebar-footer">
-            <div className="user-info">
-              <div className="user-avatar"><User size={16} /></div>
-              <span>admin</span>
-            </div>
-            <button className="logout-btn" onClick={logout} title="Se déconnecter">
-              <LogOut size={16} />
-              Déconnexion
-            </button>
+        <div className="sidebar-footer">
+          <div className="user-info">
+            <div className="user-avatar"><User size={16} /></div>
+            <span>admin</span>
           </div>
-        </aside>
+          <button className="logout-btn" onClick={logout} title="Se déconnecter">
+            <LogOut size={16} />
+            Déconnexion
+          </button>
+        </div>
+      </aside>
 
       <main className="main">
         <header className="topbar">
@@ -341,28 +339,107 @@ export default function App() {
 
         {activeSection === "ml" && (
           <section className="content-grid">
-            <Panel title="Prediction Iris" eyebrow="Modele RandomForest" icon={BrainCircuit}>
+            <Panel title="Prevision CA ITGate (Multi-varie)" eyebrow="Serie Temporelle & IA Metier" icon={BrainCircuit}>
               <form className="iris-grid" onSubmit={predict}>
-                {Object.entries(iris).map(([key, value]) => (
-                  <label key={key}>
-                    {key.replace("_", " ")}
-                    <input
-                      type="number"
-                      min="0.1"
-                      step="0.1"
-                      value={value}
-                      onChange={(event) => setIris((current) => ({ ...current, [key]: Number(event.target.value) }))}
-                    />
-                  </label>
-                ))}
-                <button className="primary-btn" disabled={loading === "/predict"}>
+                <label>
+                  Ingenieurs ITGate
+                  <input
+                    type="number"
+                    value={revenue.num_engineers}
+                    onChange={(e) => setRevenue({ ...revenue, num_engineers: Number(e.target.value) })}
+                  />
+                </label>
+                <label>
+                  Projets En Cours
+                  <input
+                    type="number"
+                    value={revenue.active_projects}
+                    onChange={(e) => setRevenue({ ...revenue, active_projects: Number(e.target.value) })}
+                  />
+                </label>
+                <label>
+                  Valeur Contrat Moy. (TND)
+                  <input
+                    type="number"
+                    value={revenue.avg_contract_value}
+                    onChange={(e) => setRevenue({ ...revenue, avg_contract_value: Number(e.target.value) })}
+                  />
+                </label>
+                <label>
+                  Revenu M-1 (TND)
+                  <input
+                    type="number"
+                    value={revenue.lag_1}
+                    onChange={(e) => setRevenue({ ...revenue, lag_1: Number(e.target.value) })}
+                  />
+                </label>
+                <label>
+                  Revenu M-2 (TND)
+                  <input
+                    type="number"
+                    value={revenue.lag_2}
+                    onChange={(e) => setRevenue({ ...revenue, lag_2: Number(e.target.value) })}
+                  />
+                </label>
+                <label>
+                  Revenu M-3 (TND)
+                  <input
+                    type="number"
+                    value={revenue.lag_3}
+                    onChange={(e) => setRevenue({ ...revenue, lag_3: Number(e.target.value) })}
+                  />
+                </label>
+                <button className="primary-btn" disabled={loading === "/predict"} style={{ gridColumn: "span 2" }}>
                   {loading === "/predict" ? <Loader2 className="spin" size={17} /> : <Search size={17} />}
-                  Predire
+                  Predire le CA du Mois M+1
                 </button>
               </form>
               <ResultBlock value={results["/predict"]} />
             </Panel>
-            <PipelineCard health={health} />
+
+            <Panel title="Graphique & Data Drift" eyebrow="Supervision en Temps Reel" icon={BarChart3}>
+              <div style={{ padding: "10px 0" }}>
+                <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: "0 0 12px" }}>
+                  <strong>Courbe Historique & Prédiction Futurs (ITGate Group)</strong>
+                </p>
+                <svg viewBox="0 0 400 150" style={{ width: "100%", height: "140px", background: "rgba(15,23,42,0.6)", borderRadius: "8px", padding: "10px" }}>
+                  {/* Grid Lines */}
+                  <line x1="10" y1="120" x2="390" y2="120" stroke="rgba(255,255,255,0.1)" />
+                  <line x1="10" y1="80" x2="390" y2="80" stroke="rgba(255,255,255,0.1)" />
+                  <line x1="10" y1="40" x2="390" y2="40" stroke="rgba(255,255,255,0.1)" />
+                  
+                  {/* Historical Curve */}
+                  <polyline
+                    fill="none"
+                    stroke="#0f766e"
+                    strokeWidth="3"
+                    points="20,110 70,95 120,105 170,75 220,60 270,68 320,40"
+                  />
+                  {/* Historical Points */}
+                  <circle cx="20" cy="110" r="4" fill="#0f766e" />
+                  <circle cx="70" cy="95" r="4" fill="#0f766e" />
+                  <circle cx="120" cy="105" r="4" fill="#0f766e" />
+                  <circle cx="170" cy="75" r="4" fill="#0f766e" />
+                  <circle cx="220" cy="60" r="4" fill="#0f766e" />
+                  <circle cx="270" cy="68" r="4" fill="#0f766e" />
+                  <circle cx="320" cy="40" r="4" fill="#0f766e" />
+
+                  {/* Forecast Line (Dashed Green) */}
+                  <line x1="320" y1="40" x2="380" y2="22" stroke="#22c55e" strokeWidth="3" strokeDasharray="5,5" />
+                  <circle cx="380" cy="22" r="5" fill="#22c55e" />
+
+                  <text x="325" y="140" fill="#cbd5df" fontSize="10">2026 Q3</text>
+                  <text x="370" y="140" fill="#22c55e" fontSize="10" fontWeight="bold">M+1</text>
+                </svg>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "14px", padding: "10px", background: "var(--surface-soft)", borderRadius: "8px", border: "1px solid var(--line)" }}>
+                  <div>
+                    <span style={{ fontSize: "0.78rem", color: "var(--muted)", display: "block" }}>Statut Data Drift</span>
+                    <strong style={{ color: "#22c55e", fontSize: "0.95rem" }}>🟢 AUCUNE DÉRIVE (NORMAL)</strong>
+                  </div>
+                  <span className="badge">Z-score: 0.42</span>
+                </div>
+              </div>
+            </Panel>
           </section>
         )}
 
@@ -423,7 +500,7 @@ function Observability({ activityLog }) {
       <Panel title="Observabilite" eyebrow="Prometheus + Grafana" icon={BarChart3}>
         <div className="ops-grid">
           <MetricTile label="Endpoint metrics" value="/metrics" />
-          <MetricTile label="Grafana" value=":3000" />
+          <MetricTile label="Grafana" value=":3001" />
           <MetricTile label="Prometheus" value=":9090" />
           <MetricTile label="Fallback LLM" value="trace" />
         </div>

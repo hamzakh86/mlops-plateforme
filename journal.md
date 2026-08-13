@@ -154,3 +154,39 @@ Ce fichier sert de journal de bord pour tracer l'avancement quotidien du projet 
 - **Observabilité & Monitoring** : Mise à jour de la configuration Prometheus (`monitoring/prometheus.yml`) avec le target `host.docker.internal:8000` pour scraper les métriques en environnement local et conteneurisé.
 
 **Résultat :** La plateforme MLOps ITGate est désormais complète, hautement sécurisée (JWT + DB), dotée d'une identité visuelle professionnelle et prête pour la démonstration en réunion.
+
+---
+
+### Jour 10 — 13/08/2026 (matin)
+**Résumé de la journée :**
+- **Réunion avec l'encadrant** : Présentation de la V2 de la plateforme. L'encadrant a formulé de nouvelles exigences pour orienter la plateforme vers un cas d'usage métier réel ITGate.
+- **Points demandés par l'encadrant** :
+  1. Le projet doit être entièrement dédié à ITGate (exit le dataset Iris).
+  2. Intégrer le Chiffre d'Affaires d'ITGate comme problème métier central.
+  3. Implémenter une approche Time Series (Séries Temporelles) pour la prédiction.
+  4. Spécifier clairement le modèle ML utilisé.
+  5. Démontrer la partie Dev (API, tests) et DevOps (Docker, K8s, ArgoCD).
+- **Pivot V2 → V3 (Time Series)** :
+  - Génération du dataset `data/raw/itgate_revenue.csv` (48 mois, 2020-2023).
+  - Remplacement du `RandomForestClassifier` Iris par un `RandomForestRegressor` avec Lag Features ($M-1, M-2, M-3$).
+  - Mise à jour de l'API FastAPI : schéma `RevenueFeatures`, endpoint `/predict` retournant des valeurs financières.
+  - Mise à jour de l'interface React : nouveau formulaire de prévision du CA.
+  - Correction de l'expérience MLflow (`ITGate_Revenue_Forecast`) et du fichier `.env`.
+
+**Résultat du Jour 10 :** La plateforme est maintenant entièrement orientée métier ITGate, avec un modèle de prévision de Chiffre d'Affaires par Séries Temporelles opérationnel de bout en bout.
+
+---
+
+### Jour 11 — 13/08/2026 (après-midi)
+**Résumé de la journée :**
+- **Plateforme V3 Avancée — Toutes les Options d'Amélioration** :
+  - **Données Multi-variées** : Génération d'un dataset enrichi (`data/raw/itgate_revenue_multivariate.csv`) intégrant les variables réelles du business ITGate : nombre d'ingénieurs actifs, nombre de projets clients en cours, valeur moyenne des contrats.
+  - **Modèle ML Multi-varié** : Mise à jour du pipeline d'entraînement (`src/train.py`) pour un `RandomForestRegressor` combinant features métier + Lag Features. Suivi MLflow du nouveau run `run_id=5c0f4045...`.
+  - **Module Data Drift** (`src/drift.py`) : Calcul automatique de la dérive statistique (Z-score max) entre les données d'inférence et le profil de référence d'entraînement (`data/drift_baseline.json`).
+  - **Monitoring Prometheus** : Ajout de la jauge `mlops_data_drift_score` dans `src/monitoring.py`. Calcul du score de drift à chaque requête `/predict`. Endpoint `GET /drift` ajouté dans `src/serve.py`.
+  - **Interface React V3** : Panneau "Graphique & Data Drift" avec courbe SVG historique + prévision $M+1$ en pointillé vert. Widget statut Data Drift (Normal/Dérive détectée). Formulaire multi-varié 6 champs.
+  - **Correction des imports** : Résolution de l'erreur `detect_data_drift not defined` par correction des imports dans `src/serve.py`.
+  - **Mise à jour README & Journal** : Version montée à V3, documentation des nouvelles fonctionnalités.
+- **Commit & Push GitHub** : Envoi des modifications sur le dépôt `hamzakh86/mlops-plateforme`.
+
+**Résultat du Jour 11 :** La plateforme MLOps ITGate V3 est opérationnelle avec une supervision complète de la qualité des données (Data Drift), un modèle économique multi-varié, et un tableau de bord React enrichi avec graphique interactif.

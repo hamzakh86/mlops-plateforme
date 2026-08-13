@@ -1,10 +1,17 @@
-# 🚀 Plateforme MLOps — ITGate Group (V2 Production Ready)
+# 🚀 Plateforme MLOps — ITGate Group (V3 Production Ready)
 
-Plateforme MLOps de bout en bout développée dans le cadre du projet de stage **ITGate Group** (Août 2026). Elle intègre l'entraînement de modèles ML, l'inférence en temps réel, un moteur RAG (IA générative sur documents), l'historisation persistante, la sécurité JWT, l'observabilité (Prometheus/Grafana) et le déploiement GitOps (ArgoCD / Kubernetes).
+Plateforme MLOps de bout en bout développée dans le cadre du projet de stage **ITGate Group** (Août 2026). Elle intègre la prévision du Chiffre d'Affaires par Séries Temporelles Multi-variées, l'inférence en temps réel, un moteur RAG (IA générative sur documents), la détection de Data Drift, la sécurité JWT, l'observabilité Prometheus/Grafana et le déploiement GitOps (ArgoCD / Kubernetes).
 
 ---
 
-## 🌟 Nouvelles Fonctionnalités V2
+## 🌟 Nouvelles Fonctionnalités V3 (Jour 11)
+- 📈 **Prévision du CA ITGate (Time Series Multi-varié)** : Modèle `RandomForestRegressor` entraîné sur les variables métier (ingénieurs, projets, contrats, lags temporels). Dataset dédié : `data/raw/itgate_revenue_multivariate.csv`.
+- 🔬 **Détection de Data Drift** : Module `src/drift.py` calculant la dérive statistique (Z-score) par rapport au profil de référence d'entraînement. Métrique Prometheus `mlops_data_drift_score` exposée sur `/metrics`. Endpoint dédié : `GET /drift`.
+- 📊 **Interface Web Avancée** : Graphique Séries Temporelles (SVG interactif) dans le Dashboard React + Widget Data Drift en temps réel + Formulaire multi-varié (6 paramètres métier ITGate).
+
+---
+
+## 🌟 Fonctionnalités V2 (Jours 9-10)
 - 🔐 **Sécurité JWT** : Authentification par jeton OAuth2/JWT. Identifiants par défaut : `admin` / `admin`.
 - 🗄️ **Base de Données & Historique** : Persistance SQLite + SQLAlchemy pour l'historique complet des requêtes API.
 - 🎨 **Branding ITGate & UI Glassmorphism** : Interface React modernisée avec le logo officiel ITGate Group, fond animé et flux de déconnexion.

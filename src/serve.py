@@ -33,7 +33,8 @@ from typing import List
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy.orm import Session
 
-from src.monitoring import LLM_REQUEST_DURATION_SECONDS, LLM_REQUESTS_TOTAL
+from src.monitoring import LLM_REQUEST_DURATION_SECONDS, LLM_REQUESTS_TOTAL, DATA_DRIFT_SCORE
+from src.drift import detect_data_drift
 from src.rag_engine import RAGEngine
 from src.database import init_db, get_db
 from src.models import User, ApiRequestLog
@@ -51,8 +52,8 @@ logger = logging.getLogger(__name__)
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 MLFLOW_TRACKING_URI  = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
-EXPERIMENT_NAME      = os.getenv("MLFLOW_EXPERIMENT_NAME", "Iris_Classification")
-MODEL_ARTIFACT_PATH  = os.getenv("MODEL_ARTIFACT_PATH", "random_forest_model")
+EXPERIMENT_NAME      = os.getenv("MLFLOW_EXPERIMENT_NAME", "ITGate_Revenue_Forecast")
+MODEL_ARTIFACT_PATH  = os.getenv("MODEL_ARTIFACT_PATH", "random_forest_ts_model")
 RAG_EXPERIMENT_NAME  = os.getenv("RAG_EXPERIMENT_NAME", "RAG_Document_QA")
 BASE_DIR             = Path(__file__).resolve().parents[1]
 FRONTEND_DIR         = BASE_DIR / "frontend"
@@ -64,17 +65,19 @@ _model_info = {}
 _rag_engine = RAGEngine()
 
 # ─── Schémas Pydantic ─────────────────────────────────────────────────────────
-class IrisFeatures(BaseModel):
-    sepal_length: float = Field(..., gt=0, description="Longueur du sépale en cm", json_schema_extra={"example": 5.1})
-    sepal_width:  float = Field(..., gt=0, description="Largeur du sépale en cm",  json_schema_extra={"example": 3.5})
-    petal_length: float = Field(..., gt=0, description="Longueur du pétale en cm", json_schema_extra={"example": 1.4})
-    petal_width:  float = Field(..., gt=0, description="Largeur du pétale en cm",  json_schema_extra={"example": 0.2})
+class RevenueFeatures(BaseModel):
+    num_engineers: int = Field(..., description="Nombre d'ingénieurs ITGate", json_schema_extra={"example": 45})
+    active_projects: int = Field(..., description="Nombre de projets en cours", json_schema_extra={"example": 16})
+    avg_contract_value: float = Field(..., description="Valeur moyenne du contrat (TND)", json_schema_extra={"example": 4800.0})
+    lag_1: float = Field(..., description="Revenu (M-1)", json_schema_extra={"example": 72500.0})
+    lag_2: float = Field(..., description="Revenu (M-2)", json_schema_extra={"example": 68000.0})
+    lag_3: float = Field(..., description="Revenu (M-3)", json_schema_extra={"example": 65400.0})
 
 class PredictRequest(BaseModel):
-    data: List[IrisFeatures] = Field(..., min_length=1, description="Liste de mesures Iris à classifier.")
+    data: List[RevenueFeatures] = Field(..., min_length=1, description="Historique des revenus pour prédire le mois suivant.")
 
 class PredictResponse(BaseModel):
-    predictions:  List[str]
+    predictions:  List[float]
     model_run_id: str
     duration_ms:  float
 
@@ -115,10 +118,11 @@ def _load_best_model() -> None:
     _model = mlflow.sklearn.load_model(model_uri)
     _model_info = {
         "run_id":     run_id,
-        "accuracy":   run.get("metrics.accuracy", "N/A"),
+        "r2":         run.get("metrics.r2", "N/A"),
+        "rmse":       run.get("metrics.rmse", "N/A"),
         "experiment": EXPERIMENT_NAME,
     }
-    logger.info(f"Modèle chargé avec succès. run_id={run_id} | accuracy={_model_info['accuracy']}")
+    logger.info(f"Modèle chargé avec succès. run_id={run_id} | R2={_model_info['r2']}")
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 @asynccontextmanager
@@ -259,17 +263,38 @@ def predict(request: PredictRequest, req: Request, current_user: User = Depends(
     if _model is None:
         raise HTTPException(status_code=503, detail="Le modèle n'est pas encore chargé.")
     start = time.perf_counter()
-    IRIS_CLASSES = {0: "setosa", 1: "versicolor", 2: "virginica"}
     try:
         df          = pd.DataFrame([item.model_dump() for item in request.data])
         predictions = _model.predict(df)
-        labels      = [IRIS_CLASSES[int(p)] for p in predictions]
+        results     = [float(p) for p in predictions]
+        
+        # Calcul du Data Drift
+        drift_report = detect_data_drift(df)
+        DATA_DRIFT_SCORE.set(drift_report["drift_score"])
+        
         duration_ms = (time.perf_counter() - start) * 1000
         log_request(db, current_user.id, "/predict", "OK", "Termine", duration_ms)
-        return PredictResponse(predictions=labels, model_run_id=_model_info.get("run_id", "inconnu"), duration_ms=round(duration_ms, 2))
+        return PredictResponse(predictions=results, model_run_id=_model_info.get("run_id", "inconnu"), duration_ms=round(duration_ms, 2))
     except Exception as e:
         log_request(db, current_user.id, "/predict", "Erreur", str(e), 0)
         raise HTTPException(status_code=422, detail=f"Erreur de prédiction : {str(e)}")
+
+
+@app.get("/drift", tags=["Monitoring & Data Quality"])
+def get_drift_status(current_user: User = Depends(get_current_user)):
+    """Retourne le rapport de dérive statistique des données (Data Drift)."""
+    # Échantillon de test fictif récent si aucune prédiction récente
+    dummy_data = pd.DataFrame([{
+        "num_engineers": 45,
+        "active_projects": 16,
+        "avg_contract_value": 4800.0,
+        "lag_1": 72500.0,
+        "lag_2": 68000.0,
+        "lag_3": 65400.0
+    }])
+    report = detect_data_drift(dummy_data)
+    DATA_DRIFT_SCORE.set(report["drift_score"])
+    return report
 
 
 @app.post("/ask", response_model=AskResponse, tags=["RAG"])
