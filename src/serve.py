@@ -51,13 +51,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ─── Configuration ────────────────────────────────────────────────────────────
-MLFLOW_TRACKING_URI  = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
-EXPERIMENT_NAME      = os.getenv("MLFLOW_EXPERIMENT_NAME", "ITGate_Revenue_Forecast")
-MODEL_ARTIFACT_PATH  = os.getenv("MODEL_ARTIFACT_PATH", "random_forest_ts_model")
-RAG_EXPERIMENT_NAME  = os.getenv("RAG_EXPERIMENT_NAME", "RAG_Document_QA")
-BASE_DIR             = Path(__file__).resolve().parents[1]
-FRONTEND_DIR         = BASE_DIR / "frontend"
-FRONTEND_DIST_DIR    = FRONTEND_DIR / "dist"
+MLFLOW_TRACKING_URI   = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
+EXPERIMENT_NAME       = os.getenv("MLFLOW_EXPERIMENT_NAME", "ITGate_Revenue_Forecast")
+REGISTERED_MODEL_NAME = os.getenv("REGISTERED_MODEL_NAME", "ITGate_Revenue_Model")
+MODEL_STAGE           = os.getenv("MODEL_STAGE", "Production")
+MODEL_ARTIFACT_PATH   = os.getenv("MODEL_ARTIFACT_PATH", "random_forest_ts_model")
+RAG_EXPERIMENT_NAME   = os.getenv("RAG_EXPERIMENT_NAME", "RAG_Document_QA")
+DEFAULT_ADMIN_USER    = os.getenv("DEFAULT_ADMIN_USER", "admin")
+DEFAULT_ADMIN_PASS    = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin")
+BASE_DIR              = Path(__file__).resolve().parents[1]
+FRONTEND_DIR          = BASE_DIR / "frontend"
+FRONTEND_DIST_DIR     = FRONTEND_DIR / "dist"
 
 # ─── Singletons globaux ───────────────────────────────────────────────────────
 _model      = None
@@ -96,11 +100,36 @@ class AskResponse(BaseModel):
     duration_ms: float
     fallback:   bool = False
 
-# ─── Chargement du modèle Iris ────────────────────────────────────────────────
+# ─── Chargement du modèle (Model Registry en priorité, fallback dernier run) ──
 def _load_best_model() -> None:
     global _model, _model_info
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     logger.info(f"Connexion à MLflow Tracking URI : {MLFLOW_TRACKING_URI}")
+    
+    # 1. Tentative de chargement depuis le MLflow Model Registry (Stage Production)
+    try:
+        registry_uri = f"models:/{REGISTERED_MODEL_NAME}/{MODEL_STAGE}"
+        logger.info(f"Tentative de chargement depuis le Model Registry : {registry_uri}")
+        _model = mlflow.sklearn.load_model(registry_uri)
+        
+        client = mlflow.MlflowClient()
+        latest_versions = client.get_latest_versions(REGISTERED_MODEL_NAME, stages=[MODEL_STAGE])
+        version_info = latest_versions[0] if latest_versions else None
+        
+        _model_info = {
+            "source":      "Model Registry",
+            "model_name":  REGISTERED_MODEL_NAME,
+            "stage":       MODEL_STAGE,
+            "version":     version_info.version if version_info else "1",
+            "run_id":      version_info.run_id if version_info else "registry",
+            "status":      "Production Ready",
+        }
+        logger.info(f"✅ Modèle chargé avec succès depuis le Registry ({REGISTERED_MODEL_NAME} v{_model_info['version']} [{MODEL_STAGE}])")
+        return
+    except Exception as e:
+        logger.warning(f"⚠️ Model Registry non disponible ({e}). Fallback vers le dernier Run de l'expérience...")
+
+    # 2. Fallback : Chargement du dernier run de l'expérience
     experiment = mlflow.get_experiment_by_name(EXPERIMENT_NAME)
     if not experiment:
         raise RuntimeError(f"L'expérience MLflow '{EXPERIMENT_NAME}' est introuvable.")
@@ -114,15 +143,17 @@ def _load_best_model() -> None:
     run = runs.iloc[0]
     run_id    = run["run_id"]
     model_uri = f"runs:/{run_id}/{MODEL_ARTIFACT_PATH}"
-    logger.info(f"Chargement du modèle depuis : {model_uri}")
+    logger.info(f"Chargement du modèle depuis le Run : {model_uri}")
     _model = mlflow.sklearn.load_model(model_uri)
     _model_info = {
+        "source":     "Experiment Run",
         "run_id":     run_id,
         "r2":         run.get("metrics.r2", "N/A"),
         "rmse":       run.get("metrics.rmse", "N/A"),
         "experiment": EXPERIMENT_NAME,
+        "stage":      "Latest_Run_Fallback"
     }
-    logger.info(f"Modèle chargé avec succès. run_id={run_id} | R2={_model_info['r2']}")
+    logger.info(f"Modèle chargé avec succès depuis le run. run_id={run_id} | R2={_model_info.get('r2')}")
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 @asynccontextmanager
@@ -133,9 +164,9 @@ async def lifespan(app: FastAPI):
     # Créer un admin par défaut si aucun user n'existe
     db_gen = get_db()
     db = next(db_gen)
-    if not db.query(User).first():
-        logger.info("Création de l'utilisateur admin par défaut.")
-        admin = User(username="admin", hashed_password=get_password_hash("admin"))
+    if not db.query(User).filter(User.username == DEFAULT_ADMIN_USER).first():
+        logger.info(f"Création de l'utilisateur admin par défaut ({DEFAULT_ADMIN_USER}).")
+        admin = User(username=DEFAULT_ADMIN_USER, hashed_password=get_password_hash(DEFAULT_ADMIN_PASS))
         db.add(admin)
         db.commit()
     db.close()
@@ -218,6 +249,30 @@ def health_check():
         "model_info":   _model_info,
         "rag_loaded":   _rag_engine.is_loaded,
         "rag_info":     _rag_engine.run_info,
+    }
+
+@app.get("/health/live", tags=["Système"])
+def liveness_check():
+    """Liveness probe pour Kubernetes : vérifie que le serveur HTTP répond."""
+    return {"status": "alive"}
+
+@app.get("/health/ready", tags=["Système"])
+def readiness_check():
+    """Readiness probe pour Kubernetes : vérifie que le modèle ML est chargé."""
+    if _model is None:
+        raise HTTPException(status_code=503, detail="Modèle ML non prêt")
+    return {"status": "ready", "model_info": _model_info}
+
+@app.get("/model/info", tags=["Système"])
+def get_model_info():
+    """Retourne les métadonnées détaillées du modèle en production."""
+    return {
+        "model_loaded": _model is not None,
+        "model_info": _model_info,
+        "features": ["num_engineers", "active_projects", "avg_contract_value", "lag_1", "lag_2", "lag_3"],
+        "target": "revenue",
+        "model_type": "RandomForestRegressor_Multivariate",
+        "tracking_uri": MLFLOW_TRACKING_URI,
     }
 
 @app.post("/token", tags=["Auth"])

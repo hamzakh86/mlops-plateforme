@@ -26,6 +26,7 @@ data/processed/
 
 # Tests & couverture
 .pytest_cache/
+.pytest_temp/
 .coverage
 htmlcov/
 *.egg-info/

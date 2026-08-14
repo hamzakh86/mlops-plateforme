@@ -13,6 +13,9 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.drift import save_baseline_stats
 
+# ─── Configuration Model Registry ─────────────────────────────────────────────
+REGISTERED_MODEL_NAME = os.getenv("REGISTERED_MODEL_NAME", "ITGate_Revenue_Model")
+
 # ─── Logger ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -41,6 +44,10 @@ def parse_arguments() -> argparse.Namespace:
                         help="Nombre de lags temporels du chiffre d'affaires.")
     parser.add_argument("--run_name", type=str, default="RF_Multivariate_Revenue",
                         help="Nom du Run MLflow.")
+    parser.add_argument("--register", action="store_true", default=True,
+                        help="Enregistrer automatiquement le modèle dans le MLflow Model Registry.")
+    parser.add_argument("--promote", action="store_true", default=True,
+                        help="Promouvoir automatiquement le modèle en stage 'Production'.")
     return parser.parse_args()
 
 
@@ -133,10 +140,58 @@ def train_and_log(
     return run_id
 
 
+def register_model(run_id: str, model_name: str = REGISTERED_MODEL_NAME) -> str:
+    """Enregistre le modèle dans le MLflow Model Registry et retourne la version."""
+    client = mlflow.MlflowClient()
+    model_uri = f"runs:/{run_id}/random_forest_ts_model"
+    logger.info(f"Enregistrement du modèle dans le Registry : {model_name} (run_id={run_id})")
+    model_version = mlflow.register_model(model_uri=model_uri, name=model_name)
+    version = model_version.version
+    logger.info(f"Modèle enregistré — version={version}")
+
+    # Ajouter une description de la version
+    client.update_model_version(
+        name=model_name,
+        version=version,
+        description=f"RandomForestRegressor multivarié ITGate — run_id={run_id}"
+    )
+    return version
+
+
+def promote_to_production(model_name: str = REGISTERED_MODEL_NAME, version: str = None) -> None:
+    """Transite le modèle (ou la dernière version) vers le stage 'Production'."""
+    client = mlflow.MlflowClient()
+
+    if version is None:
+        # Prendre la dernière version disponible
+        versions = client.get_latest_versions(model_name, stages=["None", "Staging"])
+        if not versions:
+            raise RuntimeError(f"Aucune version disponible pour '{model_name}' à promouvoir.")
+        version = versions[-1].version
+
+    logger.info(f"Transition vers Production : {model_name} v{version}")
+    client.transition_model_version_stage(
+        name=model_name,
+        version=version,
+        stage="Production",
+        archive_existing_versions=True,  # Archive les anciennes versions Production
+    )
+    logger.info(f"✅ Modèle {model_name} v{version} promu en Production.")
+
+
 def main() -> None:
     args = parse_arguments()
     X_train, X_test, y_train, y_test, feature_cols, _ = prepare_data(args.lags)
     run_id = train_and_log(X_train, X_test, y_train, y_test, feature_cols, args)
+    
+    if args.register:
+        try:
+            version = register_model(run_id)
+            if args.promote:
+                promote_to_production(version=version)
+        except Exception as e:
+            logger.warning(f"Impossible d'enregistrer/promouvoir dans le Registry (tracking backend local ?) : {e}")
+
     logger.info(f"Pipeline terminé avec succès. run_id={run_id}")
 
 

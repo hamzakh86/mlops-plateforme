@@ -52,7 +52,7 @@ jobs:
       - name: Run tests
         env:
           MLFLOW_TRACKING_URI: sqlite:///mlflow.db
-          MLFLOW_EXPERIMENT_NAME: Iris_Classification
+          MLFLOW_EXPERIMENT_NAME: ITGate_Revenue_Forecast
           RAG_EXPERIMENT_NAME: RAG_Document_QA
           GROQ_API_KEY: test-key-not-used-in-mocked-tests
         run: pytest tests/ -v
@@ -60,8 +60,8 @@ jobs:
       - name: Prepare model artifacts for Docker build
         env:
           MLFLOW_TRACKING_URI: sqlite:///mlflow.db
-          MLFLOW_EXPERIMENT_NAME: Iris_Classification
-        run: python src/train.py --run_name "ci_docker_model"
+          MLFLOW_EXPERIMENT_NAME: ITGate_Revenue_Forecast
+        run: python src/train.py --run_name "ci_docker_model" --n_estimators 50 --max_depth 5
 
       - name: Prepare Docker metadata
         id: docker_meta

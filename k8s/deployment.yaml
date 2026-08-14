@@ -47,7 +47,7 @@ spec:
         # Probe de vivacité : redémarre le pod si l'API ne répond plus
         livenessProbe:
           httpGet:
-            path: /health
+            path: /health/live
             port: 8000
           initialDelaySeconds: 5
           periodSeconds: 15
@@ -55,9 +55,11 @@ spec:
         # Probe de disponibilité : retire le pod du LoadBalancer s'il est surchargé
         readinessProbe:
           httpGet:
-            path: /health
+            path: /health/ready
             port: 8000
           initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 2
           periodSeconds: 10
         # Limites de ressources : garantir la qualité de service
         resources:

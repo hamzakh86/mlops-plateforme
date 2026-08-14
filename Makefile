@@ -34,6 +34,14 @@ train:  ## Lance le pipeline d'entraînement (paramètres par défaut)
 train-custom:  ## Lance un entraînement avec des paramètres personnalisés
 	$(PYTHON) src/train.py --n_estimators 200 --max_depth 5 --run_name "RF_n200_d5"
 
+.PHONY: register-model
+register-model:  ## Entraîne et enregistre le modèle dans le MLflow Model Registry
+	$(PYTHON) src/train.py --register --promote
+
+.PHONY: notebook
+notebook:  ## Démarre le notebook Jupyter de démonstration ITGate
+	$(PYTHON) -m jupyter notebook notebooks/demo_itgate.ipynb
+
 .PHONY: mlflow-ui
 mlflow-ui:  ## Démarre l'interface web MLflow
 	$(UVICORN) mlflow ui --backend-store-uri $(DB_URI)

@@ -50,8 +50,9 @@ WORKDIR /app
 # Copier les packages installés depuis le stage builder
 COPY --from=builder /install /usr/local
 
-# Copier le code source
+# Copier le code source et les données
 COPY src/ ./src/
+COPY data/ ./data/
 COPY --from=frontend-builder /frontend/dist ./frontend/dist
 
 # Créer les répertoires pour les artefacts MLflow avec les bons droits

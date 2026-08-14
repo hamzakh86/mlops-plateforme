@@ -1,6 +1,15 @@
-# 🚀 Plateforme MLOps — ITGate Group (V3 Production Ready)
+# 🚀 Plateforme MLOps — ITGate Group (V3 Production Ready & Model Registry)
 
-Plateforme MLOps de bout en bout développée dans le cadre du projet de stage **ITGate Group** (Août 2026). Elle intègre la prévision du Chiffre d'Affaires par Séries Temporelles Multi-variées, l'inférence en temps réel, un moteur RAG (IA générative sur documents), la détection de Data Drift, la sécurité JWT, l'observabilité Prometheus/Grafana et le déploiement GitOps (ArgoCD / Kubernetes).
+Plateforme MLOps de bout en bout développée dans le cadre du projet de stage **ITGate Group** (Août 2026). Elle intègre la prévision du Chiffre d'Affaires par Séries Temporelles Multi-variées, l'inférence en temps réel, un moteur RAG (IA générative sur documents), la détection de Data Drift, la gestion de cycle de vie via **MLflow Model Registry (Stage Production)**, un Notebook de soutenance, la sécurité JWT, l'observabilité Prometheus/Grafana et le déploiement GitOps (ArgoCD / Kubernetes).
+
+---
+
+## 🌟 Nouvelles Fonctionnalités V3.1 (Mise en Production)
+- 🏛️ **MLflow Model Registry (Production Stage)** : Gestion du cycle de vie du modèle (`ITGate_Revenue_Model`). Le serveur d'inférence charge en priorité le modèle promu en `Production`, avec fallback automatique.
+- 📓 **Notebook Jupyter de Soutenance (`notebooks/demo_itgate.ipynb`)** : Analyse E2E avec graphiques de série temporelle, comparaison CA Réel vs Prédictions, Feature Importance et simulation de Data Drift.
+- 🩺 **Probes Kubernetes Séparées** : Endpoints dédiés `/health/live` (Liveness) et `/health/ready` (Readiness) pour une orchestration Kubernetes sans faux positifs.
+- ℹ️ **Métadonnées Modèle (`GET /model/info`)** : Exposition des métadonnées du modèle actif en production.
+- 🔁 **CI/CD Alignée** : Pipeline GitHub Actions aligné sur l'expérience `ITGate_Revenue_Forecast`.
 
 ---
 
@@ -12,7 +21,7 @@ Plateforme MLOps de bout en bout développée dans le cadre du projet de stage *
 ---
 
 ## 🌟 Fonctionnalités V2 (Jours 9-10)
-- 🔐 **Sécurité JWT** : Authentification par jeton OAuth2/JWT. Identifiants par défaut : `admin` / `admin`.
+- 🔐 **Sécurité JWT** : Authentification par jeton OAuth2/JWT. Identifiants par défaut configurables via `.env`.
 - 🗄️ **Base de Données & Historique** : Persistance SQLite + SQLAlchemy pour l'historique complet des requêtes API.
 - 🎨 **Branding ITGate & UI Glassmorphism** : Interface React modernisée avec le logo officiel ITGate Group, fond animé et flux de déconnexion.
 - 📊 **Évaluation RAG (Ragas)** : Script d'évaluation automatique de la fidélité et pertinence des réponses IA (`make evaluate-rag`).

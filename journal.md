@@ -190,3 +190,31 @@ Ce fichier sert de journal de bord pour tracer l'avancement quotidien du projet 
 - **Commit & Push GitHub** : Envoi des modifications sur le dépôt `hamzakh86/mlops-plateforme`.
 
 **Résultat du Jour 11 :** La plateforme MLOps ITGate V3 est opérationnelle avec une supervision complète de la qualité des données (Data Drift), un modèle économique multi-varié, et un tableau de bord React enrichi avec graphique interactif.
+
+---
+
+### Jour 12 — 14/08/2026
+**Résumé de la journée :**
+- **MLflow Model Registry & Promotion en Production** :
+  - Intégration de l'enregistrement automatique du modèle dans le Model Registry (`src/train.py` via `mlflow.register_model`) sous le nom `ITGate_Revenue_Model`.
+  - Implémentation du passage au stage `Production` (`promote_to_production`).
+  - Modification de l'API FastAPI (`src/serve.py`) pour charger en priorité le modèle depuis le Model Registry (`models:/ITGate_Revenue_Model/Production`), avec mécanisme de fallback automatique sur le dernier run de l'expérience si le registry n'est pas accessible.
+  - Ajout de la commande `make register-model` dans le `Makefile`.
+- **Probes Kubernetes & Santé Découplée** :
+  - Ajout des routes `/health/live` (Liveness) et `/health/ready` (Readiness) dans FastAPI pour séparer la disponibilité du processus HTTP et le chargement effectif du modèle ML.
+  - Mise à jour du manifeste Kubernetes `k8s/deployment.yaml` pour configurer `livenessProbe` et `readinessProbe` distinctes.
+  - Ajout de l'endpoint `GET /model/info` exposant les métadonnées détaillées du modèle actif en production.
+- **Notebook Jupyter de Soutenance (`notebooks/demo_itgate.ipynb`)** :
+  - Création d'un notebook interactif complet pour la démonstration et la soutenance :
+    1. Exploration visuelle des séries temporelles (Chiffre d'Affaires, Ingénieurs, Projets).
+    2. Ingénierie des caractéristiques temporelles (Lag Features).
+    3. Chargement du modèle depuis le MLflow Model Registry.
+    4. Graphique comparatif CA Réel vs Prédictions sur l'année de test 2023 avec intervalle d'incertitude.
+    5. Analyse d'explicabilité par Feature Importance (poids relatif de chaque variable).
+    6. Simulation et détection de Data Drift en direct (cas nominal vs cas de dérive).
+  - Ajout de la cible `make notebook` et de `matplotlib` dans `requirements.txt`.
+- **Correction CI/CD** :
+  - Correction dans `.github/workflows/ci.yml` de la variable d'environnement `MLFLOW_EXPERIMENT_NAME` (passage de `Iris_Classification` à `ITGate_Revenue_Forecast`).
+  - Alignement des arguments d'entraînement pour le build de l'image Docker de test.
+
+**Résultat du Jour 12 :** La plateforme intègre désormais les pratiques MLOps les plus rigoureuses avec le MLflow Model Registry en stage Production, un notebook de démonstration prêt pour la soutenance, des probes Kubernetes résilientes et un pipeline CI/CD validé.
