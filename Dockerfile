@@ -55,13 +55,12 @@ COPY src/ ./src/
 COPY data/ ./data/
 COPY --from=frontend-builder /frontend/dist ./frontend/dist
 
-# Créer les répertoires pour les artefacts MLflow avec les bons droits
-RUN mkdir -p /app/mlruns && chown -R appuser:appgroup /app
+# Copier les artefacts MLflow nécessaires au chargement du modèle
+COPY mlflow.db .
+COPY mlruns/ ./mlruns/
 
-# Copier les artefacts MLflow si disponibles (optionnel pour CI)
-# Utilisé uniquement si les fichiers existent dans le build context
-COPY --chown=appuser:appgroup mlflow.db . 2>/dev/null || echo "mlflow.db not found"
-COPY --chown=appuser:appgroup mlruns/ ./mlruns/ 2>/dev/null || echo "mlruns not found"
+# Changer le propriétaire des fichiers
+RUN chown -R appuser:appgroup /app
 
 # Basculer vers l'utilisateur non-root
 USER appuser
