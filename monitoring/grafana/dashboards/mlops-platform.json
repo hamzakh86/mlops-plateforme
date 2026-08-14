@@ -430,6 +430,56 @@
       ],
       "title": "Average RAG Retrieved Documents",
       "type": "timeseries"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 6,
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 2.5 }
+            ]
+          },
+          "mappings": [],
+          "unit": "none",
+          "min": 0,
+          "max": 5
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "mlops_data_drift_score",
+          "legendFormat": "Data Drift Z-score",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "ML Data Drift Score (Z-score)",
+      "type": "gauge"
     }
   ],
   "refresh": "10s",
