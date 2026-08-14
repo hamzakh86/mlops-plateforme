@@ -11,9 +11,9 @@ WORKDIR /build
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# ─────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────
 # Stage 2 : Frontend — construit l'interface React
-# ─────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────
 FROM node:22-slim AS frontend-builder
 
 WORKDIR /frontend
@@ -24,9 +24,9 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-# ─────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────
 # Stage 3 : Runtime — image finale légère (sans outils de build)
-# ─────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────
 FROM python:3.11-slim AS runtime
 
 # Métadonnées de l'image, renseignées par la CI ou par Makefile
@@ -54,9 +54,12 @@ COPY --from=builder /install /usr/local
 COPY src/ ./src/
 COPY --from=frontend-builder /frontend/dist ./frontend/dist
 
-# Copier les artefacts MLflow nécessaires au chargement du modèle
-COPY mlflow.db .
-COPY mlruns/ ./mlruns/
+# Créer les répertoires pour les artefacts MLflow
+RUN mkdir -p /app/mlruns && chown -R appuser:appgroup /app/mlruns
+
+# Copier les artefacts MLflow si disponibles (optionnel pour CI)
+COPY --chown=appuser:appgroup mlflow.db . 2>/dev/null || true
+COPY --chown=appuser:appgroup mlruns/ ./mlruns/ 2>/dev/null || true
 
 # Changer le propriétaire des fichiers
 RUN chown -R appuser:appgroup /app
