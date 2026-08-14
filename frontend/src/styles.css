@@ -288,9 +288,11 @@ h2 {
 
 .top-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .top-actions a,
@@ -300,15 +302,17 @@ h2 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 38px;
+  gap: 6px;
+  min-height: 34px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: #ffffff;
   color: var(--ink);
-  font-weight: 750;
+  font-size: 0.82rem;
+  font-weight: 700;
   text-decoration: none;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 
@@ -319,7 +323,7 @@ h2 {
 }
 
 .top-actions a {
-  padding: 0 11px;
+  padding: 0 10px;
 }
 
 .icon-btn {
