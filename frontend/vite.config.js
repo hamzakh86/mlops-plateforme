@@ -15,6 +15,10 @@ export default defineConfig({
       "/extract": "http://127.0.0.1:8000",
       "/classify": "http://127.0.0.1:8000",
       "/metrics": "http://127.0.0.1:8000",
+      "/token": "http://127.0.0.1:8000",
+      "/history": "http://127.0.0.1:8000",
+      "/docs": "http://127.0.0.1:8000",
+      "/openapi.json": "http://127.0.0.1:8000",
     },
   },
 });

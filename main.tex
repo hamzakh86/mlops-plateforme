@@ -1,0 +1,1555 @@
+% !TEX program  = pdflatex
+% !TEX encoding = UTF-8 Unicode
+% -----------------------------------------------------------------------
+%  RAPPORT DE STAGE MLOps – Hamza KHALED – ITGate Group 2026
+%  Compatible Overleaf (TeX Live / pdfLaTeX)
+%  → Uploader ce fichier + le dossier figures/ (11 images PNG)
+% -----------------------------------------------------------------------
+\documentclass[11pt,a4paper,oneside]{report}
+
+% ====================================================================
+%                  ENCODAGE, POLICES ET LANGUE
+% ====================================================================
+\usepackage[utf8]{inputenc}   % Overleaf gère UTF-8 nativement
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ====================================================================
+%                  GÉOMÉTRIE ET MISE EN PAGE
+% ====================================================================
+\usepackage[
+  top=2.5cm,
+  bottom=2.5cm,
+  left=2.5cm,
+  right=2.5cm,
+  headheight=16pt,
+  footskip=28pt
+]{geometry}
+
+% ====================================================================
+%                  PACKAGES GRAPHIQUES ET COULEURS
+% ====================================================================
+\usepackage[table]{xcolor}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{shapes,shapes.geometric,arrows,arrows.meta,positioning,calc,shadows,fit,backgrounds}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+
+% ====================================================================
+%                  CHARTE GRAPHIQUE ITGATE PRESTIGE
+% ====================================================================
+\definecolor{itgateblue}{HTML}{133B5C}      % Bleu Nuit Institutionnel
+\definecolor{itgatesecondary}{HTML}{1E5F74} % Bleu Canard Technologique
+\definecolor{itgateaccent}{HTML}{00A88F}    % Vert d'eau / Teal dynamique
+\definecolor{itgatelight}{HTML}{F1F5F9}     % Fond gris-bleuté ultra-doux
+\definecolor{itgatedark}{HTML}{0B1B2B}      % Bleu très sombre
+\definecolor{codebg}{HTML}{F8FAFC}          % Fond pour listings de code
+\definecolor{bordergray}{HTML}{CBD5E1}      % Bordure fine
+\definecolor{textgray}{HTML}{475569}        % Texte secondaire discret
+
+% Couleurs UML & Statuts
+\definecolor{umluser}{HTML}{1F4E79}         % Bleu UML User
+\definecolor{umldoc}{HTML}{2E75B6}          % Bleu clair Doc
+\definecolor{umlconv}{HTML}{D35400}         % Orange Conversation
+\definecolor{umlmsg}{HTML}{27AE60}          % Vert Message
+\definecolor{statusgreen}{HTML}{10B981}     % Vert Statut Normal
+\definecolor{statusred}{HTML}{EF4444}       % Rouge Statut Alerte Drift
+
+% ====================================================================
+%                  TYPOGRAPHIE DES TITRES (TITLESEC)
+% ====================================================================
+\usepackage{titlesec}
+
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\color{itgateblue}}
+  {\begin{tikzpicture}
+     \node[fill=itgateblue,text=white,rounded corners=3pt,inner sep=4pt,font=\footnotesize\bfseries\scshape] {Chapitre \thechapter};
+   \end{tikzpicture}}
+  {2pt}
+  {\Large\color{itgateblue}\titlerule[1.2pt]\vspace{0.1cm}\Large}
+\titlespacing*{\chapter}{0pt}{-14pt}{12pt}
+
+\titleformat{\section}
+  {\large\bfseries\color{itgateblue}}
+  {\color{itgateaccent}\rule[-2pt]{3.5pt}{1.15em}\hspace{6pt}\thesection}
+  {0.4em}
+  {}
+\titlespacing*{\section}{0pt}{9pt}{3pt}
+
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{itgatesecondary}}
+  {\thesubsection}
+  {0.4em}
+  {}
+\titlespacing*{\subsection}{0pt}{6pt}{2pt}
+
+\titleformat{\subsubsection}
+  {\small\bfseries\color{itgatedark}}
+  {\thesubsubsection}
+  {0.4em}
+  {}
+\titlespacing*{\subsubsection}{0pt}{4pt}{2pt}
+
+% ====================================================================
+%                  EN-TÊTES ET PIEDS DE PAGE (FANCYHDR)
+% ====================================================================
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\footnotesize\bfseries\color{itgateblue} Plateforme MLOps V3.1 \ \textbar\ \ ITGate Group}
+\rhead{\footnotesize\color{textgray}\nouppercase{\leftmark}}
+\cfoot{\footnotesize\color{textgray} Hamza KHALED --- Rapport de Stage --- ITGate Group 2026 \ \textbar\ \ Page \textbf{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \cfoot{\footnotesize\color{textgray} Hamza KHALED --- Rapport de Stage --- ITGate Group 2026 \ \textbar\ \ Page \textbf{\thepage}}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0.4pt}
+}
+
+% ====================================================================
+%                  CONTRÔLE TABLE DES MATIÈRES (TOCLOFT)
+% ====================================================================
+\usepackage{tocloft}
+\setlength{\cftbeforechapskip}{4pt}
+\setlength{\cftbeforesecskip}{1.5pt}
+\renewcommand{\cftchapfont}{\bfseries\small\color{itgateblue}}
+\renewcommand{\cftsecfont}{\small}
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\setcounter{tocdepth}{1}
+
+% ====================================================================
+%                  BOÎTES STYLISÉES (TCOLORBOX)
+% ====================================================================
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{focusbox}[1][]{
+    enhanced,
+    colback=itgatelight,
+    colframe=itgateblue,
+    arc=2mm,
+    boxrule=0.7pt,
+    leftrule=3.5mm,
+    fonttitle=\bfseries\color{white}\small,
+    title=\hspace{-1mm} #1,
+    coltitle=white,
+    attach boxed title to top left={yshift=-2mm, xshift=3.5mm},
+    boxed title style={colback=itgateblue, colframe=itgateblue, boxrule=0pt, arc=1mm},
+    top=1.5mm, bottom=1.5mm, left=3mm, right=3mm
+}
+
+\newtcolorbox{problembox}[1][]{
+    enhanced,
+    colback=itgateaccent!8!white,
+    colframe=itgateaccent,
+    arc=2mm,
+    boxrule=0.7pt,
+    leftrule=3.5mm,
+    fonttitle=\bfseries\color{white}\small,
+    title=\hspace{-1mm} #1,
+    coltitle=white,
+    attach boxed title to top left={yshift=-2mm, xshift=3.5mm},
+    boxed title style={colback=itgateaccent, colframe=itgateaccent, boxrule=0pt, arc=1mm},
+    top=1.5mm, bottom=1.5mm, left=3mm, right=3mm
+}
+
+\newtcolorbox{imgframe}[1][]{
+    enhanced,
+    colback=white,
+    colframe=bordergray,
+    arc=2mm,
+    boxrule=0.6pt,
+    left=1.5mm, right=1.5mm, top=1.5mm, bottom=1.5mm,
+    shadow={0.8mm}{-0.8mm}{0mm}{black!8},
+    #1
+}
+
+% ====================================================================
+%                  PACKAGES TECHNIQUES & TABLEAUX
+% ====================================================================
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{parskip}
+
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=itgateblue,
+    urlcolor=itgateaccent,
+    citecolor=itgatesecondary,
+    pdftitle={Rapport de Stage MLOps - Hamza Khaled - ITGate Group},
+    pdfauthor={Hamza Khaled - Ecole Polytechnique de Sousse}
+}
+
+\lstdefinestyle{ingstyle}{
+    backgroundcolor=\color{codebg},
+    commentstyle=\color{textgray}\itshape,
+    keywordstyle=\color{itgateblue}\bfseries,
+    stringstyle=\color{itgateaccent},
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{bordergray},
+    xleftmargin=0.4em,
+    xrightmargin=0.4em,
+    numbers=left,
+    numberstyle=\tiny\color{textgray},
+    numbersep=4pt,
+    showstringspaces=false,
+    tabsize=2,
+    lineskip=-0.4pt
+}
+\lstset{style=ingstyle}
+
+\captionsetup{
+    font=small,
+    labelfont={bf,color=itgateblue},
+    format=plain,
+    justification=centering,
+    skip=4pt
+}
+
+% ====================================================================
+%                          DÉBUT DU DOCUMENT
+% ====================================================================
+\begin{document}
+
+% ==================== PAGE DE GARDE PRESTIGE ====================
+\begin{titlepage}
+\begin{tikzpicture}[remember picture, overlay]
+  \fill[color=itgateblue] (current page.north west) rectangle ([xshift=1.4cm]current page.south west);
+  \fill[color=itgateaccent] ([xshift=1.4cm]current page.north west) rectangle ([xshift=1.65cm]current page.south west);
+\end{tikzpicture}
+
+\hspace{1cm}
+\begin{minipage}{0.88\textwidth}
+\vspace*{-0.5cm}
+
+\begin{center}
+\begin{minipage}[c]{0.22\textwidth}
+  \flushleft
+  \includegraphics[height=1.85cm]{figures/logo_polytech.png}
+\end{minipage}
+\hfill
+\begin{minipage}[c]{0.52\textwidth}
+  \centering
+  {\scshape\footnotesize\bfseries République Tunisienne}\\[0.05cm]
+  {\scshape\tiny Ministère de l'Enseignement Supérieur et de la Recherche Scientifique}\\[0.12cm]
+  {\large\bfseries\color{itgateblue} ÉCOLE POLYTECHNIQUE}\\[0.02cm]
+  {\large\bfseries\color{itgateblue} DE SOUSSE}\\[0.05cm]
+  {\tiny\color{textgray} Accréditation Européenne EUR-ACE}\\[0.04cm]
+  {\scriptsize\bfseries Département de Génie Informatique}
+\end{minipage}
+\hfill
+\begin{minipage}[c]{0.22\textwidth}
+  \flushright
+  \includegraphics[height=1.85cm]{figures/logo_itgate.png}
+\end{minipage}
+\vspace{0.35cm}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=itgatelight,
+    colframe=itgateblue,
+    arc=3.5mm,
+    boxrule=1.2pt,
+    shadow={1.5mm}{-1.5mm}{0mm}{black!8}
+]
+\centering
+\vspace{0.15cm}
+{\large\bfseries\color{itgatesecondary} RAPPORT DE STAGE D'IMMERSION INGÉNIEUR}\\[0.12cm]
+{\small\color{textgray} Stage d'été --- Août 2026}\\[0.25cm]
+{\LARGE\bfseries\color{itgateblue} Plateforme MLOps Industrielle End-to-End}\\[0.18cm]
+{\large\bfseries\color{itgateaccent} Prévision de Séries Temporelles, Moteur RAG Résilient, Model Registry et Observabilité Cloud-Native}\\[0.12cm]
+{\footnotesize\color{textgray} Solution V3.1 Production-Ready \& Data Drift Monitoring}
+\vspace{0.15cm}
+\end{tcolorbox}
+
+\vspace{0.55cm}
+
+\begin{minipage}[t]{0.48\textwidth}
+    \begin{tcolorbox}[colback=white, colframe=bordergray, arc=2mm, boxrule=0.8pt, height=4.1cm, title=\textbf{\footnotesize\color{itgateblue} RÉALISÉ PAR :}]
+    \textbf{\large Hamza KHALED}\\[0.18cm]
+    {\footnotesize\color{textgray}
+    $\bullet$ Cycle Préparatoire Intégré (2025/2026)\\[0.06cm]
+    $\bullet$ Admis en \textbf{Cycle Ingénieur (2026/2027)}\\[0.06cm]
+    $\bullet$ Spécialité : \textbf{Génie Informatique}}
+    \end{tcolorbox}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+    \begin{tcolorbox}[colback=white, colframe=bordergray, arc=2mm, boxrule=0.8pt, height=4.1cm, title=\textbf{\footnotesize\color{itgateblue} ENCADREMENT ITGATE :}]
+    {\footnotesize
+    $\bullet$ \textbf{M. Achraf CHEHAB}\\ \textit{\scriptsize (Encadrant IA \& Machine Learning)}\\[0.08cm]
+    $\bullet$ \textbf{Mme Nourchene HEDFI}\\ \textit{\scriptsize (Encadrante DevOps \& Cloud)}\\[0.08cm]
+    $\bullet$ \textbf{Mme Yasmine KEBAIER}\\ \textit{\scriptsize (Encadrante Développement Logiciel)}}
+    \end{tcolorbox}
+\end{minipage}
+
+\vfill
+
+\begin{tcolorbox}[colback=itgateblue, colframe=itgateblue, arc=2mm, halign=center]
+    {\color{white}\bfseries\small Organisme d'Accueil : IT GATE GROUP (Sousse, Tunisie)}\\
+    {\color{white}\footnotesize \href{https://www.itgate-group.com}{\color{itgateaccent}\textbf{www.itgate-group.com}} \quad \textbar \quad Période : Août 2026 (Durée : 1 mois)}
+\end{tcolorbox}
+
+\vspace{0.15cm}
+{\footnotesize\color{textgray} Année Universitaire : 2025 / 2026}
+
+\end{center}
+\end{minipage}
+\end{titlepage}
+
+% ==================== PAGES PRÉLIMINAIRES ====================
+\pagenumbering{roman}
+
+\section*{Remerciements}
+\addcontentsline{toc}{chapter}{Remerciements}
+\markboth{Remerciements}{Remerciements}
+
+Au terme de ce stage d'immersion ingénieur effectué au sein de l'entreprise \textbf{ITGate Group}, je tiens à exprimer ma profonde gratitude à toutes les personnes qui ont contribué à la réussite et à l'enrichissement de cette expérience professionnelle.
+
+J'adresse mes plus vifs remerciements à mon équipe d'encadrement au sein d'ITGate Group pour leur disponibilité, leur écoute et la qualité exceptionnelle de leur accompagnement :
+\begin{itemize}[leftmargin=1.2cm, itemsep=1pt]
+    \item À Monsieur \textbf{Achraf CHEHAB}, encadrant Intelligence Artificielle et Machine Learning, pour son orientation scientifique rigoureuse, son expertise sur le cycle de vie MLflow, la modélisation des séries temporelles multi-variées et l'architecture des moteurs RAG.
+    \item À Madame \textbf{Nourchene HEDFI}, encadrante DevOps, pour ses conseils précieux sur la conteneurisation Docker multi-stage, l'orchestration Kubernetes résiliente, la supervision Prometheus/Grafana et le déploiement continu GitOps avec ArgoCD.
+    \item À Madame \textbf{Yasmine KEBAIER}, encadrante Développement Logiciel, pour ses recommandations avisées sur la conception d'APIs REST asynchrones haute performance sous FastAPI et l'élaboration d'une interface web moderne sous React.js.
+\end{itemize}
+
+Je tiens également à remercier chaleureusement la direction générale d'\textbf{ITGate Group} pour m'avoir ouvert les portes de leur structure innovante et m'avoir offert un environnement de travail stimulant et bienveillant.
+
+Mes remerciements s'adressent enfin au corps professoral et administratif de l'\textbf{École Polytechnique de Sousse} pour la qualité de l'enseignement dispensé durant le cycle préparatoire, me fournissant les bases solides nécessaires pour aborder avec sérénité et ambition le \textbf{Cycle Ingénieur en Génie Informatique}. Enfin, toute ma reconnaissance va à mes parents et à mes proches pour leur soutien indéfectible tout au long de mon parcours.
+
+\newpage
+
+% ==================== RÉSUMÉ ET ABSTRACT ====================
+\section*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+\markboth{Résumé}{Résumé}
+
+Ce travail s'inscrit dans le cadre du stage d'été 2026 effectué au sein d'\textbf{ITGate Group}, entreprise technologique spécialisée en ingénierie logicielle et intelligence artificielle basée à Sousse, Tunisie. L'objectif principal de ce projet est de concevoir, implémenter et déployer une \textbf{plateforme MLOps industrielle de bout en bout} permettant d'automatiser et de sécuriser l'intégralité du cycle de vie des modèles d'Intelligence Artificielle en production.
+
+La solution répond à un cas d'usage économique direct pour ITGate : la prévision du Chiffre d'Affaires futur par \textbf{Séries Temporelles Multi-variées} (\textit{RandomForestRegressor} intégrant les effectifs d'ingénieurs, les projets clients en cours, la valeur contractuelle et des \textit{Lag Features}), entièrement gouverné par le \textbf{MLflow Model Registry} en stage \texttt{Production}. La plateforme intègre également un moteur \textbf{RAG (Retrieval-Augmented Generation)} documentaire hybride (index vectoriel FAISS local et accélérateur cloud Groq LPU) doté d'une stratégie de dégradation contrôlée (\textit{Graceful Fallback}), un module de détection en temps réel du \textbf{Data Drift} ($Z$-score maximal) supervisé via \textbf{Prometheus} et \textbf{Grafana}, une sécurité applicative robuste par jetons \textbf{JWT}, et une persistance d'audit sous \textbf{SQLite / SQLAlchemy}.
+
+Conteneurisée via \textbf{Docker} (build multi-stage léger) et orchestrée sur \textbf{Kubernetes} avec auto-scaling horizontal (HPA) et sondes de santé découplées (\texttt{/health/live} et \texttt{/health/ready}), la solution bénéficie d'une livraison continue automatisée par \textbf{GitHub Actions} et \textbf{ArgoCD (GitOps)}. L'ensemble est piloté à travers une interface web moderne et ergonomique développée sous \textbf{React.js} respectant l'identité visuelle d'ITGate Group.
+
+\vspace{0.25cm}
+\textbf{Mots-clés :} MLOps, Séries Temporelles Multi-variées, MLflow Model Registry, RAG Résilient, Data Drift, Kubernetes, Prometheus, Grafana, FastAPI, React.js, GitOps.
+
+\vspace{0.35cm}
+\section*{Abstract}
+
+This work is conducted as part of the summer 2026 internship carried out at \textbf{ITGate Group}, a technology company specializing in software engineering and artificial intelligence based in Sousse, Tunisia. The main objective of this project is to design, develop, and deploy an \textbf{industrial end-to-end MLOps platform} that automates and secures the complete lifecycle of Artificial Intelligence models in production.
+
+The solution addresses a direct business use case for ITGate: revenue forecasting using \textbf{Multivariate Time Series} (Random Forest Regressor combining engineering headcount, active client projects, average contract value, and temporal lag features), fully managed by the \textbf{MLflow Model Registry} in the \texttt{Production} stage. Furthermore, the platform incorporates a resilient hybrid \textbf{RAG (Retrieval-Augmented Generation)} document engine (local FAISS vector index and Groq Cloud LPU acceleration) with a graceful degradation fallback mechanism, real-time \textbf{Data Drift detection} ($Z$-score) monitored via \textbf{Prometheus} and \textbf{Grafana}, robust \textbf{JWT authentication} security, and an audit trail database using \textbf{SQLite / SQLAlchemy}.
+
+Packaged with \textbf{Docker} (lightweight multi-stage build) and orchestrated on \textbf{Kubernetes} with Horizontal Pod Autoscaling (HPA) and decoupled health probes (\texttt{/health/live} and \texttt{/health/ready}), the platform is continuously integrated and deployed via \textbf{GitHub Actions} and \textbf{ArgoCD (GitOps)}. The system is managed through a modern and user-friendly web console built with \textbf{React.js} adhering to ITGate Group's visual identity.
+
+\vspace{0.25cm}
+\textbf{Keywords:} MLOps, Multivariate Time Series, MLflow Model Registry, Resilient RAG, Data Drift, Kubernetes, Prometheus, Grafana, FastAPI, React.js, GitOps.
+
+\newpage
+
+% ==================== TABLE DES MATIÈRES ====================
+\markboth{Table des matières}{Table des matières}
+\tableofcontents
+\newpage
+
+% ==================== TABLES DES FIGURES ET TABLEAUX ====================
+\markboth{Table des figures}{Table des figures}
+\listoffigures
+\addcontentsline{toc}{chapter}{Table des figures}
+
+\vspace{0.5cm}
+\markboth{Liste des tableaux}{Liste des tableaux}
+\listoftables
+\addcontentsline{toc}{chapter}{Liste des tableaux}
+\newpage
+
+% ==================== ABRÉVIATIONS ====================
+\section*{Liste des Abréviations}
+\addcontentsline{toc}{chapter}{Liste des Abréviations}
+\markboth{Liste des Abréviations}{Liste des Abréviations}
+
+\noindent
+\begin{center}
+\small
+\rowcolors{2}{itgatelight}{white}
+\begin{tabularx}{\textwidth}{@{}p{3.2cm}X@{}}
+\toprule
+\textbf{Sigle / Acronyme} & \textbf{Signification et Définition} \\ \midrule
+\textbf{API} & Application Programming Interface --- Interface de programmation applicative \\
+\textbf{CA} & Chiffre d'Affaires \\
+\textbf{CD} & Continuous Deployment --- Déploiement Continu \\
+\textbf{CI} & Continuous Integration --- Intégration Continue \\
+\textbf{CPU} & Central Processing Unit --- Unité centrale de traitement \\
+\textbf{CT} & Continuous Training --- Réentraînement Continu automatisé \\
+\textbf{ESN} & Entreprise de Services du Numérique \\
+\textbf{FAISS} & Facebook AI Similarity Search --- Bibliothèque de recherche vectorielle dense \\
+\textbf{GHCR} & GitHub Container Registry --- Registre de conteneurs OCI \\
+\textbf{HPA} & Horizontal Pod Autoscaler --- Autoscaling horizontal de conteneurs Kubernetes \\
+\textbf{HTTP / HTTPS} & HyperText Transfer Protocol (Secure) \\
+\textbf{IA} & Intelligence Artificielle \\
+\textbf{JSON} & JavaScript Object Notation --- Format standard d'échange de données \\
+\textbf{JWT} & JSON Web Token --- Jeton d'authentification chiffré et sécurisé \\
+\textbf{LLM} & Large Language Model --- Modèle de langage de grande taille \\
+\textbf{LPU} & Language Processing Unit --- Accélérateur matériel haute vitesse Groq \\
+\textbf{MAE} & Mean Absolute Error --- Erreur Absolue Moyenne \\
+\textbf{ML} & Machine Learning --- Apprentissage Automatique \\
+\textbf{MLOps} & Machine Learning Operations --- Pratiques unifiées ML, DevOps et Data Engineering \\
+\textbf{NLP} & Natural Language Processing --- Traitement Automatique du Langage Naturel \\
+\textbf{OCI} & Open Container Initiative --- Standard de conteneurisation \\
+\textbf{ORM} & Object-Relational Mapping --- Outil de mapping objet-relationnel \\
+\textbf{RAG} & Retrieval-Augmented Generation --- Génération augmentée par récupération \\
+\textbf{REST} & Representational State Transfer --- Style d'architecture logicielle web \\
+\textbf{RMSE} & Root Mean Squared Error --- Racine de l'Erreur Quadratique Moyenne \\
+\textbf{SSE} & Server-Sent Events --- Protocole de communication streaming unidirectionnel \\
+\textbf{SVG} & Scalable Vector Graphics --- Format vectoriel graphique interactif \\
+\textbf{UML} & Unified Modeling Language --- Langage de modélisation unifié \\
+\textbf{URI / URL} & Uniform Resource Identifier / Uniform Resource Locator \\
+\textbf{UUID} & Universally Unique Identifier --- Identifiant universel unique \\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\newpage
+\pagenumbering{arabic}
+
+% ====================================================================
+%                       INTRODUCTION GÉNÉRALE
+% ====================================================================
+\chapter*{Introduction Générale}
+\addcontentsline{toc}{chapter}{Introduction Générale}
+\markboth{Introduction Générale}{Introduction Générale}
+
+L'émergence des technologies d'Intelligence Artificielle et la massification des données ont profondément transformé la stratégie opérationnelle des entreprises modernes. Des modèles prédictifs complexes aux agents d'IA générative, les algorithmes de Machine Learning s'imposent désormais comme des leviers décisionnels indispensables pour optimiser les performances financières, anticiper les tendances et automatiser le traitement de documents complexes.
+
+Toutefois, l'industrie logicielle fait face à un défi d'ingénierie considérable : le gouffre existant entre l'expérimentation d'un modèle dans un notebook de recherche et son exploitation pérenne au sein d'une infrastructure de production d'entreprise. Selon les études récentes de l'industrie, plus de 80\,\% des modèles entraînés ne parviennent jamais au stade de la mise en production en raison du manque de reproductibilité, de l'absence de gouvernance stricte des versions d'artefacts, de la latence excessive lors des montées en charge et, surtout, de la dégradation silencieuse due au \textbf{Data Drift}.
+
+Pour combler cette rupture, la méthodologie \textbf{MLOps (Machine Learning Operations)} s'est affirmée comme la discipline fondamentale combinant les principes du DevOps, de la Data Science et du Data Engineering pour garantir la robustesse, la traçabilité et la haute disponibilité des services d'IA tout au long de leur cycle de vie opérationnel.
+
+C'est dans ce cadre stratégique que s'est déroulé mon stage d'immersion ingénieur d'un mois (Août 2026) au sein d'\textbf{ITGate Group}, entreprise technologique de référence basée à Sousse, visant à concevoir, développer et déployer une plateforme MLOps industrielle de bout en bout.
+
+\begin{problembox}[Problématique Centrale du Stage]
+\centering
+\itshape\small
+« Comment concevoir et déployer une plateforme MLOps industrielle complète capable d'automatiser la prévision du Chiffre d'Affaires d'ITGate par Séries Temporelles Multi-variées, de gouverner les modèles via un Model Registry en Production, d'assurer une assistance documentaire résiliente par RAG et de détecter proactivement le Data Drift sur une infrastructure Kubernetes supervisée ? »
+\end{problembox}
+
+Pour répondre avec rigueur et clarté à cette problématique, le présent rapport est articulé autour de \textbf{trois chapitres principaux} :
+
+\begin{itemize}[leftmargin=0.8cm, itemsep=2pt, topsep=3pt]
+    \item \textbf{Le Chapitre 1 : Étude Préalable} expose le cadre institutionnel du projet, présente l'organisme d'accueil ITGate Group, analyse l'état de l'art, détaille la solution proposée, la méthodologie agile Scrum et le formalisme UML.
+    \item \textbf{Le Chapitre 2 : Étude Conceptuelle} formalise la spécification des besoins fonctionnels et non fonctionnels, identifie les acteurs, et présente la conception architecturale à travers les diagrammes UML (cas d'utilisation, classes et séquences).
+    \item \textbf{Le Chapitre 3 : Réalisation et Déploiement} détaille la stack technologique, l'architecture en 6 couches, la modélisation mathématique du ML et du Data Drift, les pipelines d'inférence/RAG, les interfaces utilisateurs réelles et les résultats de benchmarking.
+\end{itemize}
+
+Le document s'achève par une conclusion générale dressant le bilan technique et personnel de cette immersion, tout en ouvrant des perspectives d'évolution pour de futures collaborations avec ITGate Group.
+
+\newpage
+
+% ====================================================================
+%                       CHAPITRE 1 : ÉTUDE PRÉALABLE
+% ====================================================================
+\chapter{Étude Préalable}
+
+\section{Introduction}
+Ce premier chapitre a pour objectif de situer le projet dans son contexte environnemental, stratégique et technique. Nous débuterons par la présentation du cadre du stage et de l'organisme d'accueil \textbf{ITGate Group}. Nous procéderons ensuite à une analyse critique des approches traditionnelles et des outils du marché afin de justifier la solution proposée. Enfin, nous décrirons la méthodologie de gestion de projet adoptée et les outils de modélisation retenus pour structurer le développement.
+
+\section{Cadre du Projet}
+Ce projet s'inscrit dans le cadre du stage d'été d'immersion professionnelle effectué au sein d'\textbf{ITGate Group} pour une durée d'un mois, du \textbf{03 août 2026 au 31 août 2026}. 
+
+Ce stage constitue une étape charnière dans mon cursus académique à l'\textbf{École Polytechnique de Sousse} : après l'achèvement réussi du Cycle Préparatoire Intégré (2025/2026), il prépare mon intégration dans le \textbf{Cycle Ingénieur en Génie Informatique} (2026/2027). Il a pour but d'éprouver et de développer des compétences professionnelles concrètes dans les domaines du Machine Learning appliqué, du Cloud Computing, du DevOps et du génie logiciel.
+
+Le projet a été baptisé : \textbf{« Plateforme MLOps Industrielle End-to-End : Prévision de Séries Temporelles, Moteur RAG Résilient et Observabilité Cloud-Native »} (Version 3.1 Production-Ready).
+
+\section{Présentation de l'Organisme d'Accueil : ITGate Group}
+\textbf{ITGate Group} (\href{https://www.itgate-group.com}{www.itgate-group.com}) est une agence technologique tunisienne innovante implantée à Sousse, spécialisée dans l'ingénierie logicielle, la transformation digitale, le Cloud et l'Intelligence Artificielle.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  scale=0.88, transform shape,
+  hub/.style={rectangle, draw=itgateblue, fill=itgateblue, rounded corners=3pt,
+    text=white, minimum width=13cm, minimum height=0.75cm, align=center,
+    font=\small\bfseries, drop shadow},
+  pole/.style={rectangle, draw=bordergray, fill=itgatelight, rounded corners=3pt,
+    minimum width=6.2cm, minimum height=1.5cm, text width=5.9cm,
+    align=left, font=\scriptsize, drop shadow, inner sep=5pt}
+]
+  \node[hub] (header) at (0, 1.2) {ITGATE GROUP \quad \textbar \quad \normalfont\footnotesize Pôles d'Expertise Technologique};
+
+  \node[pole] (p1) at (-3.3, 0) {\textbf{\color{itgateblue}1. Développement Logiciel \& SaaS}\\\color{textgray}Applications web/mobiles haute \mbox{disponibilité}, microservices, architectures cloud réactives.};
+  \node[pole] (p2) at (3.3, 0)  {\textbf{\color{itgateblue}2. Intelligence Artificielle \& Data}\\\color{textgray}Modèles prédictifs (séries temporelles), NLP, pipelines RAG \& vision par ordinateur.};
+
+  \node[pole] (p3) at (-3.3, -1.8) {\textbf{\color{itgateblue}3. DevOps \& Cloud Infrastructure}\\\color{textgray}Conteneurisation \mbox{Docker}, orchestration \mbox{Kubernetes}, pipelines CI/CD \& GitOps \mbox{ArgoCD}.};
+  \node[pole] (p4) at (3.3, -1.8)  {\textbf{\color{itgateblue}4. Conseil \& Transformation}\\\color{textgray}Accompagnement méthodologique Agile Scrum, audit de code \& transfert de compétences.};
+\end{tikzpicture}
+\caption{Pôles d'expertise et domaines d'activité d'ITGate Group}
+\label{fig:itgate_poles}
+\end{figure}
+
+Les principaux objectifs et engagements d'ITGate Group s'articulent autour des axes suivants :
+\begin{itemize}[leftmargin=0.8cm, itemsep=3pt, topsep=1pt]
+    \item \textbf{Développement sur mesure :} Conception d'applications web, mobiles et de plateformes SaaS hautement scalables pour des clients nationaux et internationaux.
+    \item \textbf{Intégration d'Intelligence Artificielle :} Intégration de briques de traitement automatique du langage (NLP), de vision par ordinateur et de modèles prédictifs dans les systèmes d'information d'entreprise.
+    \item \textbf{Accompagnement DevOps \& Cloud :} Migration d'infrastructures vers le Cloud, mise en place de pipelines CI/CD, d'observabilité et d'orchestration de conteneurs.
+    \item \textbf{Formation et transmission :} Accueil, encadrement et montée en compétences de jeunes talents en ingénierie logicielle.
+\end{itemize}
+
+\section{Contexte Général et Impact du Projet}
+Au sein d'une Entreprise de Services du Numérique (ESN) en pleine expansion comme ITGate Group, le pilotage stratégique de l'activité repose sur la capacité à anticiper avec précision l'évolution du Chiffre d'Affaires (CA) en fonction des ressources humaines mobilisées (nombre d'ingénieurs en mission), des projets clients ouverts et des montants contractuels signés.
+
+Parallèlement, la capitalisation du savoir interne exige des outils d'IA capables de consulter instantanément la documentation d'entreprise (politiques de sécurité, guides opérationnels) sans compromettre la confidentialité des données.
+
+Le projet répond à ces impératifs stratégiques à travers des impacts concrets :
+\begin{itemize}[leftmargin=0.8cm, itemsep=3pt, topsep=1pt]
+    \item \textbf{Fiabilisation des décisions financières :} Fournir un modèle prédictif par séries temporelles multi-variées capable de calculer les prévisions de CA à $M+1$.
+    \item \textbf{Standardisation industrielle :} Remplacer les déploiements artisanaux par un pipeline MLOps automatisé avec promotion en stage \texttt{Production} via MLflow.
+    \item \textbf{Résilience et souveraineté documentaire :} Mettre en œuvre un moteur RAG combinant recherche vectorielle locale (FAISS) et génération accélérée avec mécanisme de repli en cas de coupure réseau.
+    \item \textbf{Supervision proactive de la donnée :} Détecter automatiquement toute dérive statistique (Data Drift) avant qu'elle ne dégrade les prédictions en production.
+\end{itemize}
+
+\section{Étude de l'Existant et Analyse Critique}
+
+\subsection{Analyse des Solutions Existantes}
+Pour mesurer la pertinence de la solution à concevoir, nous avons procédé à une analyse comparative des principales approches et plateformes de serving et de monitoring ML disponibles sur le marché :
+
+\begin{enumerate}[leftmargin=0.8cm, itemsep=3pt, topsep=1pt]
+    \item \textbf{Scripts Python et Notebooks Isolés (Jupyter) :} Très utilisés lors des phases exploratoires de Data Science, les notebooks ne fournissent aucun mécanisme natif de gestion de version d'artefact, aucune isolation réseau, aucune gestion de la concurrence et aucun monitoring temps réel.
+    \item \textbf{Plateformes MLOps Cloud Propriétaires (AWS SageMaker, Google Vertex AI, Azure ML) :} Ces solutions offrent une suite d'outils complète mais imposent un coût financier récurrent très élevé, une complexité de configuration importante et un verrouillage technologique propriétaire (\textit{vendor lock-in}).
+    \item \textbf{Outils Open-Source Décloisonnés :} L'utilisation d'outils isolés sans intégration native avec un registre de modèles, un moteur de Data Drift et un orchestrateur de conteneurs rend la maintenance extrêmement coûteuse et fragile.
+\end{enumerate}
+
+\newpage
+\subsection{Critique de l'Existant}
+Le tableau~\ref{tab:critique_existant} met en lumière les forces et faiblesses des différentes approches existantes.
+
+\begin{table}[H]
+\centering
+\small
+\rowcolors{2}{itgatelight}{white}
+\begin{tabularx}{\textwidth}{@{}p{3.8cm}p{4.2cm}X@{}}
+\toprule
+\textbf{Approche / Solution} & \textbf{Avantages Constatés} & \textbf{Limites et Risques Majeurs} \\ \midrule
+\textbf{Notebooks / Scripts} & Prototypage rapide, flexibilité algorithmique. & Aucune reproductibilité, pas de haute disponibilité, absence de détection de dérive. \\
+\textbf{SaaS Propriétaires (AWS SageMaker)} & Écosystème managé complet, forte puissance de calcul. & Facturation très onéreuse, dépendance cloud fermée, fuite potentielle de données sensibles. \\
+\textbf{Serving Basique (Flask / vLLM brut)} & Léger, maîtrise totale du code. & Pas de Model Registry, absence d'auto-scaling, gestion manuelle des alertes et du drift. \\ \bottomrule
+\end{tabularx}
+\caption{Tableau comparatif et critique des solutions d'industrialisation ML}
+\label{tab:critique_existant}
+\end{table}
+
+\subsection{Solution Proposée}
+Face à ces limites, nous proposons la conception et le déploiement d'une \textbf{Plateforme MLOps Complète, Autonome et Cloud-Native} combinant le meilleur des technologies open-source industrielles :
+\begin{itemize}[leftmargin=0.8cm, itemsep=3pt, topsep=1pt]
+    \item Un modèle de prévision de séries temporelles multi-variées robuste avec suivi complet sous \textbf{MLflow}.
+    \item Un cycle de vie gouverné par le \textbf{MLflow Model Registry} avec transition automatisée vers le stage \texttt{Production}.
+    \item Une API REST asynchrone haute performance propulsée par \textbf{FastAPI}, sécurisée par jetons \textbf{JWT}.
+    \item Un moteur \textbf{RAG} documentaire hybride (index vectoriel local \textbf{FAISS} + génération \textbf{Groq LPU}) avec dégradation contrôlée (\textit{Graceful Fallback}).
+    \item Un module de calcul temps réel du \textbf{Data Drift ($Z$-Score)} avec transmission d'alertes à \textbf{Prometheus} et \textbf{Grafana}.
+    \item Un empaquetage conteneurisé \textbf{Docker multi-stage} et un déploiement résilient sur \textbf{Kubernetes} géré par \textbf{ArgoCD (GitOps)}.
+    \item Une console de pilotage moderne en \textbf{React.js} dotée d'une ergonomie \textit{Glassmorphism} et d'un rendu vectoriel SVG interactif.
+\end{itemize}
+
+\section{Méthodologie de Travail Adoptée}
+Pour garantir la livraison d'un système complet, robuste et testé dans le temps imparti d'un mois de stage, nous avons adopté une méthodologie agile inspirée du framework \textbf{Scrum}, découpée en \textbf{quatre sprints hebdomadaires} clairement jalonnés.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  scale=0.90, transform shape,
+  sprint/.style={rectangle, draw=itgateblue, fill=itgatelight, rounded corners=4pt,
+    minimum width=3.2cm, minimum height=2.2cm, text width=3.0cm,
+    align=left, font=\scriptsize, drop shadow, inner sep=5pt},
+  arr/.style={thick, ->, >=stealth, color=itgateaccent, line width=1.4pt}
+]
+  \node[sprint] (s1) at (0,0) {\textbf{\color{itgateblue}Sprint 1 (Sem.~1)}\\\rule{\linewidth}{0.3pt}\\[2pt]$\bullet$ Étude du besoin\\$\bullet$ Socle ML \& MLflow\\$\bullet$ API FastAPI V1};
+  \node[sprint] (s2) at (3.7,0) {\textbf{\color{itgateblue}Sprint 2 (Sem.~2)}\\\rule{\linewidth}{0.3pt}\\[2pt]$\bullet$ Docker Multi-Stage\\$\bullet$ Manifestes K8s\\$\bullet$ Moteur RAG \& NLP};
+  \node[sprint] (s3) at (7.4,0) {\textbf{\color{itgateblue}Sprint 3 (Sem.~3)}\\\rule{\linewidth}{0.3pt}\\[2pt]$\bullet$ Sécurité JWT\\$\bullet$ Prometheus \& Grafana\\$\bullet$ Console React V2};
+  \node[sprint] (s4) at (11.1,0) {\textbf{\color{itgateblue}Sprint 4 (Sem.~4)}\\\rule{\linewidth}{0.3pt}\\[2pt]$\bullet$ Séries Temp. V3\\$\bullet$ Model Registry Prod\\$\bullet$ Data Drift \& ArgoCD};
+
+  \draw[arr] (s1.east) -- (s2.west);
+  \draw[arr] (s2.east) -- (s3.west);
+  \draw[arr] (s3.east) -- (s4.west);
+\end{tikzpicture}
+\caption{Découpage méthodologique en 4 Sprints agiles de développement}
+\label{fig:methodo_sprints}
+\end{figure}
+
+Le tableau~\ref{tab:journal_avancement} récapitule la chronologie des 12 jours ouvrés de réalisation consignés dans le journal de bord du projet.
+
+\begin{table}[H]
+\centering
+\small
+\rowcolors{2}{itgatelight}{white}
+\begin{tabularx}{\textwidth}{@{}cp{3cm}X@{}}
+\toprule
+\textbf{Jour} & \textbf{Date} & \textbf{Activités Réalisées \& Jalons Techniques Atteints} \\ \midrule
+\textbf{J1-J2} & 03/08 -- 04/08 & Cadrage du sujet, étude de l'état de l'art MLOps, initialisation de l'environnement VS Code/Git. \\
+\textbf{J3} & 05/08/2026 & Création du socle baseline ML, configuration de \texttt{train.py} et tracking sous MLflow SQLite. \\
+\textbf{J4} & 06/08/2026 & Développement de l'API de serving sous FastAPI (\texttt{/predict}) et validation via Swagger UI. \\
+\textbf{J5} & 07/08/2026 & Dockerisation multi-stage, manifestes Kubernetes (Deployment, Service, HPA) et conception du RAG. \\
+\textbf{J6} & 10/08/2026 & Implémentation des endpoints métiers (\texttt{/extract}, \texttt{/classify}), pivot LLM vers Groq LPU et suite de tests mockés. \\
+\textbf{J7} & 11/08/2026 & Élargissement du corpus RAG ITGate, ajout du monitoring métier Prometheus et du mécanisme de fallback. \\
+\textbf{J8} & 11/08/2026 & Provisioning du dashboard Grafana, workflow CI/CD GitHub Actions, publication GHCR et console React V1. \\
+\textbf{J9} & 12/08/2026 & Sécurisation par authentification JWT, persistance d'audit SQLite/SQLAlchemy, UI Glassmorphism et manifeste ArgoCD. \\
+\textbf{J10} & 13/08/2026 (Matin) & Réunion d'avancement avec l'encadrant : pivot vers le cas d'usage réel CA ITGate par Séries Temporelles. \\
+\textbf{J11} & 13/08/2026 (A-M) & Dataset multi-varié (ingénieurs, projets, contrats), module Data Drift ($Z$-Score), métriques et graphique SVG React. \\
+\textbf{J12} & 14/08/2026 & MLflow Model Registry en stage \texttt{Production}, sondes K8s découplées (\texttt{/live}, \texttt{/ready}), notebook \texttt{demo\_itgate.ipynb}. \\ \bottomrule
+\end{tabularx}
+\caption{Journal synthétique de progression quotidienne des travaux}
+\label{tab:journal_avancement}
+\end{table}
+
+\section{Le Langage de Modélisation Retenu}
+Pour assurer une communication sans ambiguïté entre la conception conceptuelle et l'implémentation technique, nous utilisons le langage standardisé \textbf{UML (Unified Modeling Language)}. 
+
+Nous mobilisons trois types de diagrammes complémentaires :
+\begin{itemize}[leftmargin=0.8cm, itemsep=0.5pt, topsep=1pt]
+    \item \textbf{Diagrammes de Cas d'Utilisation :} Pour représenter les fonctionnalités offertes par la plateforme et les frontières d'interaction avec les différents acteurs humains et systèmes.
+    \item \textbf{Diagramme de Classes :} Pour formaliser la structure statique du modèle de données, les entités d'audit et la gouvernance des modèles.
+    \item \textbf{Diagrammes de Séquence :} Pour détailler la dynamique temporelle et la chronologie des échanges de messages entre le frontend React, l'API FastAPI, MLflow, FAISS, Groq et la base de données.
+\end{itemize}
+
+\section{Conclusion}
+Dans ce premier chapitre, nous avons établi les fondations du projet au sein d'ITGate Group, mis en évidence les carences des approches existantes et justifié le choix d'une architecture MLOps intégrée. Nous avons également détaillé la méthodologie Scrum adoptée. Le chapitre suivant est dédié à l'étude conceptuelle et à la modélisation formelle du système.
+
+\newpage
+
+% ====================================================================
+%                  CHAPITRE 2 : ÉTUDE CONCEPTUELLE
+% ====================================================================
+\chapter{Étude Conceptuelle}
+
+\section{Introduction}
+L'étude conceptuelle constitue l'étape fondamentale permettant de traduire les objectifs généraux du projet en spécifications techniques rigoureuses. Dans ce chapitre, nous définirons avec précision les besoins fonctionnels et non fonctionnels de la plateforme, identifierons les acteurs du système, puis présenterons l'ensemble des diagrammes de modélisation UML (Cas d'utilisation, Classes, Séquences).
+
+\section{Spécification des Besoins}
+
+\subsection{Besoins Fonctionnels}
+Les besoins fonctionnels décrivent les actions, calculs et comportements attendus du système :
+
+\begin{enumerate}[leftmargin=0.8cm, itemsep=1pt, topsep=1pt]
+    \item \textbf{Module d'Authentification et de Sécurité :} Permettre l'authentification des utilisateurs par identifiant/mot de passe, générer des jetons chiffrés \textbf{JWT (JSON Web Tokens)} OAuth2 Bearer, et protéger toutes les routes d'inférence par validation cryptographique du token.
+    \item \textbf{Module d'Inférence et Prévision Séries Temporelles :} Charger dynamiquement depuis le \textbf{MLflow Model Registry} le modèle en stage \texttt{Production} (\texttt{ITGate\_Revenue\_Model}), fournir l'endpoint \texttt{POST /predict} pour calculer les prévisions financières à $M+1$ avec latence et run ID.
+    \item \textbf{Module de Détection de Data Drift (Dérive des Données) :} Évaluer en temps réel l'écart statistique ($Z$-score) entre le payload entrant et la baseline de référence d'apprentissage (\texttt{drift\_baseline.json}), exposer le rapport via \texttt{GET /drift} et transmettre l'alerte à Prometheus ($Z > 2.5$).
+    \item \textbf{Module RAG Documentaire et IA Générative :} Vectoriser et indexer localement la base documentaire d'entreprise sous \textbf{FAISS}, fournir un assistant intelligent via \texttt{POST /ask} (Groq LPU LLaMA-3) avec dégradation contrôlée (\textit{Graceful Fallback}) vers les sources locales en cas de panne réseau.
+    \item \textbf{Module d'Audit et Persistance des Requêtes :} Enregistrer systématiquement chaque appel API dans une base de données \textbf{SQLite} via l'ORM \textbf{SQLAlchemy}, et exposer l'historique d'audit via l'endpoint \texttt{GET /history}.
+    \item \textbf{Module de Supervision de Santé Découplée :} Fournir des sondes de vivacité (\texttt{GET /health/live}) et de disponibilité (\texttt{GET /health/ready}) distinctes pour l'orchestration Kubernetes.
+\end{enumerate}
+
+\newpage
+\subsection{Besoins Non Fonctionnels}
+Les besoins non fonctionnels fixent les critères de qualité, de performance, de sécurité et d'exploitabilité du système :
+
+\begin{table}[H]
+\centering
+\small
+\rowcolors{2}{itgatelight}{white}
+\begin{tabularx}{\textwidth}{@{}p{3.4cm}p{4.2cm}X@{}}
+\toprule
+\textbf{Critère Qualité} & \textbf{Exigence Cible} & \textbf{Implémentation Technique} \\ \midrule
+\textbf{Latence Inférence} & $< 20\text{ ms}$ (Tabulaire) / $< 500\text{ ms}$ (RAG) & Backend asynchrone FastAPI, calcul matriciel Scikit-Learn optimisé, moteur FAISS C++. \\
+\textbf{Disponibilité} & $99.9\,\%$ de temps de fonctionnement & Déploiement Kubernetes multi-réplicas avec sondes liveness/readiness indépendantes. \\
+\textbf{Scalabilité} & Montée en charge automatique sans coupure & Horizontal Pod Autoscaler (HPA) ajustant le nombre de pods de 1 à 5 selon la charge CPU ($>70\,\%$). \\
+\textbf{Sécurité} & Chiffrement et principe du moindre privilège & Hachage PBKDF2 salé des mots de passe, signature JWT HS256, conteneur Docker sous utilisateur non-root. \\
+\textbf{Portabilité} & Indépendance vis-à-vis de l'environnement hôte & Standard OCI conteneurisé, configuration déclarative par variables d'environnement (\texttt{.env}, ConfigMaps). \\
+\textbf{Maintenabilité} & Modularité et testabilité automatisée & Architecture en couches strictes, couverture par 27 tests unitaires et d'intégration sous pytest. \\ \bottomrule
+\end{tabularx}
+\caption{Spécification des exigences non fonctionnelles de la plateforme}
+\label{tab:besoins_non_fonct}
+\end{table}
+
+\section{Analyse des Besoins et Modélisation UML}
+
+\subsection{Identification des Acteurs}
+Un acteur représente une entité externe qui interagit directement avec le système :
+\begin{itemize}[leftmargin=0.8cm, itemsep=0.5pt, topsep=1pt]
+    \item \textbf{Data Scientist / ML Engineer :} Entraîne, optimise et promeut les modèles dans le Model Registry MLflow.
+    \item \textbf{Ingénieur DevOps / Cloud :} Déploie l'infrastructure conteneurisée, supervise Prometheus/Grafana et gère ArgoCD.
+    \item \textbf{Manager / Décideur ITGate :} Consulte les prévisions de CA et supervise le Data Drift sur la console React.
+    \item \textbf{Collaborateur Interne :} Interroge la base documentaire d'entreprise via l'assistant RAG.
+    \item \textbf{Système Prometheus (Acteur Automatique) :} Collecte périodiquement les métriques sur \texttt{/metrics}.
+\end{itemize}
+
+\subsection{Diagrammes de Cas d'Utilisation}
+
+\subsubsection{Diagramme de Cas d'Utilisation Général}
+La figure~\ref{fig:uml_usecase_general} offre une vue d'ensemble des interactions entre les acteurs et les grands cas d'utilisation du système.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.92\textwidth}{!}{%
+\begin{tikzpicture}[
+  actor/.style={rectangle, draw=itgateblue, fill=itgatelight, rounded corners=3pt, minimum width=2.8cm, minimum height=0.75cm, text centered, font=\scriptsize\bfseries, drop shadow},
+  extactor/.style={rectangle, draw=orange!80!black, fill=orange!10!white, rounded corners=3pt, minimum width=3.0cm, minimum height=0.85cm, text centered, font=\scriptsize\bfseries, align=center, drop shadow},
+  usecase/.style={ellipse, draw=itgatesecondary, fill=white, minimum width=6.2cm, minimum height=0.75cm, text centered, font=\scriptsize, drop shadow},
+  includeuc/.style={ellipse, draw=itgateaccent, fill=itgateaccent!10!white, minimum width=5.2cm, minimum height=0.7cm, text centered, font=\scriptsize\itshape},
+  rel/.style={thick, color=itgateblue},
+  incl/.style={dashed, ->, >=stealth, color=itgateaccent, font=\tiny\bfseries}
+]
+  % Boundary
+  \draw[rounded corners=8pt, line width=1pt, draw=itgateblue!70, fill=blue!2!white, dashed]
+    (3.6, 0.4) rectangle (14.6, -7.8);
+  \node[font=\footnotesize\bfseries\color{itgateblue}] at (9.1, 0.1) {Plateforme MLOps Industrielle ITGate};
+
+  % Acteurs
+  \node[actor] (ds)      at (1.2, -1.0) {Data Scientist};
+  \node[actor] (devops)  at (1.2, -2.4) {Ingénieur DevOps};
+  \node[actor] (manager) at (1.2, -4.0) {Manager ITGate};
+  \node[actor] (collab)  at (1.2, -5.6) {Collaborateur};
+
+  \node[extactor] (prom) at (16.8, -3.8) {Serveur Prometheus\\{\tiny(Supervision Métriques)}};
+
+  % Cas d'utilisation
+  \node[usecase] (uc1) at (9.1, -1.0) {Entraîner \& Promouvoir Modèle (MLflow)};
+  \node[usecase] (uc2) at (9.1, -2.3) {Superviser Pods K8s \& Déploiement GitOps};
+  \node[usecase] (uc3) at (9.1, -3.6) {Prédire Chiffre d'Affaires \& Évaluer Drift};
+  \node[usecase] (uc4) at (9.1, -4.9) {Interroger Documents d'Entreprise (RAG)};
+  \node[usecase] (uc5) at (9.1, -6.1) {Consulter Historique d'Audit des Requêtes};
+  \node[includeuc] (uc_auth) at (9.1, -7.1) {Authentification JWT \textnormal{\guillemotleft include\guillemotright}};
+
+  \draw[rel, ->, >=stealth] (ds) -- (uc1);
+  \draw[rel, ->, >=stealth] (devops) -- (uc2);
+  \draw[rel, ->, >=stealth] (manager) -- (uc3);
+  \draw[rel, ->, >=stealth] (collab) -- (uc4);
+  \draw[rel, ->, >=stealth] (manager) -- (uc5);
+  \draw[rel, ->, >=stealth] (prom) -- (uc3);
+
+  \draw[incl] (uc3) -- (uc_auth);
+  \draw[incl] (uc4) -- (uc_auth);
+  \draw[incl] (uc5) -- (uc_auth);
+\end{tikzpicture}%
+}
+\caption{Diagramme de cas d'utilisation général de la plateforme MLOps}
+\label{fig:uml_usecase_general}
+\end{figure}
+
+\subsubsection{Diagrammes de Cas d'Utilisation Raffinés}
+Les figures~\ref{fig:uml_usecase_predict} et~\ref{fig:uml_usecase_rag} détaillent les sous-fonctions d'inférence et du moteur documentaire RAG résilient.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  actor/.style={rectangle, draw=itgateblue, fill=itgatelight, rounded corners=3pt, minimum width=2.4cm, minimum height=0.7cm, text centered, font=\scriptsize\bfseries},
+  usecase/.style={ellipse, draw=itgatesecondary, fill=white, minimum width=4.8cm, minimum height=0.7cm, text centered, font=\scriptsize},
+  subuc/.style={ellipse, draw=itgateaccent, fill=itgateaccent!10!white, minimum width=4.6cm, minimum height=0.65cm, text centered, font=\tiny\itshape},
+  rel/.style={thick, color=itgateblue},
+  incl/.style={dashed, ->, >=stealth, color=itgateaccent, font=\tiny\bfseries}
+]
+  \draw[rounded corners=6pt, line width=0.8pt, draw=itgateblue!70, fill=blue!2!white, dashed] (3.0, 0.3) rectangle (9.8, -5.2);
+  \node[font=\scriptsize\bfseries\color{itgateblue}] at (6.4, 0.0) {Inférence \& Data Drift};
+
+  \node[actor] (m) at (1.0, -2.4) {Manager};
+
+  \node[usecase]  (p1) at (6.4, -0.9) {Prédire CA (\texttt{POST /predict})};
+  \node[subuc]    (p2) at (6.4, -1.8) {Charger Modèle Prod \textnormal{\guillemotleft inc\guillemotright}};
+  \node[subuc]    (p3) at (6.4, -2.7) {Calculer Z-Score Drift \textnormal{\guillemotleft inc\guillemotright}};
+  \node[subuc]    (p4) at (6.4, -3.6) {Persister SQLite \textnormal{\guillemotleft inc\guillemotright}};
+  \node[subuc]    (p5) at (6.4, -4.6) {Alerte si $Z > 2.5$ \textnormal{\guillemotleft ext\guillemotright}};
+
+  \draw[rel, ->, >=stealth] (m) -- (p1);
+  \draw[incl] (p1) -- (p2);
+  \draw[incl] (p1) -- (p3);
+  \draw[incl] (p1) -- (p4);
+  \draw[incl, color=red!70!black] (p3) -- (p5);
+\end{tikzpicture}%
+}
+\caption{Cas d'utilisation : Inférence \& Drift}
+\label{fig:uml_usecase_predict}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  actor/.style={rectangle, draw=itgateblue, fill=itgatelight, rounded corners=3pt, minimum width=2.4cm, minimum height=0.7cm, text centered, font=\scriptsize\bfseries},
+  usecase/.style={ellipse, draw=itgatesecondary, fill=white, minimum width=4.8cm, minimum height=0.7cm, text centered, font=\scriptsize},
+  subuc/.style={ellipse, draw=itgateaccent, fill=itgateaccent!10!white, minimum width=4.6cm, minimum height=0.65cm, text centered, font=\tiny\itshape},
+  rel/.style={thick, color=itgateblue},
+  incl/.style={dashed, ->, >=stealth, color=itgateaccent, font=\tiny\bfseries}
+]
+  \draw[rounded corners=6pt, line width=0.8pt, draw=itgateblue!70, fill=blue!2!white, dashed] (3.0, 0.3) rectangle (9.8, -4.4);
+  \node[font=\scriptsize\bfseries\color{itgateblue}] at (6.4, 0.0) {Moteur RAG Résilient};
+
+  \node[actor] (u) at (1.0, -2.0) {Collaborateur};
+
+  \node[usecase]  (r1) at (6.4, -0.9) {Poser Question (\texttt{POST /ask})};
+  \node[subuc]    (r2) at (6.4, -1.8) {Recherche FAISS \textnormal{\guillemotleft inc\guillemotright}};
+  \node[subuc]    (r3) at (6.4, -2.7) {Génération Groq LPU \textnormal{\guillemotleft inc\guillemotright}};
+  \node[subuc]    (r4) at (6.4, -3.8) {Repli FAISS si Erreur \textnormal{\guillemotleft ext\guillemotright}};
+
+  \draw[rel, ->, >=stealth] (u) -- (r1);
+  \draw[incl] (r1) -- (r2);
+  \draw[incl] (r1) -- (r3);
+  \draw[incl, color=red!70!black] (r3) -- (r4);
+\end{tikzpicture}%
+}
+\caption{Cas d'utilisation : Moteur RAG}
+\label{fig:uml_usecase_rag}
+\end{minipage}
+\end{figure}
+
+\newpage
+\subsection{Diagramme de Classes Global}
+Le diagramme de classes de la figure~\ref{fig:uml_class_global} formalise les entités structurelles du système, leurs attributs, opérations et associations.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{%
+\begin{tikzpicture}[
+  cls/.style={rectangle, draw=bordergray, fill=white, rounded corners=3pt, drop shadow, text width=5.8cm, inner sep=0pt, font=\scriptsize},
+  head/.style={text=white, font=\small\bfseries, minimum width=5.8cm, minimum height=0.6cm, align=center, rounded corners=2pt},
+  rel/.style={thick, color=itgateblue}
+]
+  % User
+  \node[cls] (user) at (0, 0) {
+    \begin{tikzpicture}\node[head, fill=umluser] {User (Sécurité JWT)};\end{tikzpicture}\\[-0.08cm]
+    \hspace{0.15cm}\begin{minipage}{5.5cm}
+    \vspace{0.08cm}
+    \texttt{+ id : Integer [PK]}\\
+    \texttt{+ username : String [Unique]}\\
+    \texttt{+ hashed\_password : String}\\
+    \texttt{+ created\_at : DateTime}\\[0.05cm]
+    \rule{\linewidth}{0.3pt}\\[0.05cm]
+    \texttt{+ verify\_password() : Bool}\\
+    \texttt{+ generate\_jwt\_token() : Str}
+    \vspace{0.1cm}
+    \end{minipage}
+  };
+
+  % ApiRequestLog
+  \node[cls] (log) at (9.6, 0) {
+    \begin{tikzpicture}\node[head, fill=umldoc] {ApiRequestLog (Audit SQLite)};\end{tikzpicture}\\[-0.08cm]
+    \hspace{0.15cm}\begin{minipage}{5.5cm}
+    \vspace{0.08cm}
+    \texttt{+ id : Integer [PK]}\\
+    \texttt{+ user\_id : Integer [FK]}\\
+    \texttt{+ endpoint : String}\\
+    \texttt{+ status : String}\\
+    \texttt{+ duration\_ms : Float}\\
+    \texttt{+ created\_at : DateTime}\\[0.05cm]
+    \rule{\linewidth}{0.3pt}\\[0.05cm]
+    \texttt{+ to\_dict() : JSON}
+    \vspace{0.1cm}
+    \end{minipage}
+  };
+
+  % MLflowModel
+  \node[cls] (model) at (0, -4.6) {
+    \begin{tikzpicture}\node[head, fill=umlconv] {MLflowModel (Registry)};\end{tikzpicture}\\[-0.08cm]
+    \hspace{0.15cm}\begin{minipage}{5.5cm}
+    \vspace{0.08cm}
+    \texttt{+ model\_name : String}\\
+    \texttt{+ version : Integer}\\
+    \texttt{+ stage : String = "Production"}\\
+    \texttt{+ run\_id : String}\\
+    \texttt{+ metrics\_r2 : Float = 0.942}\\[0.05cm]
+    \rule{\linewidth}{0.3pt}\\[0.05cm]
+    \texttt{+ load\_model() : Estimator}\\
+    \texttt{+ predict(X) : List[Float]}
+    \vspace{0.1cm}
+    \end{minipage}
+  };
+
+  % DriftBaseline
+  \node[cls] (drift) at (9.6, -4.6) {
+    \begin{tikzpicture}\node[head, fill=umlmsg] {DriftBaseline (Qualité)};\end{tikzpicture}\\[-0.08cm]
+    \hspace{0.15cm}\begin{minipage}{5.5cm}
+    \vspace{0.08cm}
+    \texttt{+ feature\_name : String}\\
+    \texttt{+ mean : Float \quad + std : Float}\\
+    \texttt{+ min : Float \quad + max : Float}\\
+    \texttt{+ threshold : Float = 2.5}\\[0.05cm]
+    \rule{\linewidth}{0.3pt}\\[0.05cm]
+    \texttt{+ compute\_zscore() : Float}\\
+    \texttt{+ evaluate\_drift() : Report}
+    \vspace{0.1cm}
+    \end{minipage}
+  };
+
+  % Relations with opaque white backgrounds
+  \draw[rel, ->, >=stealth] (user.east) -- (log.west) 
+    node[pos=0.15, above=2pt, font=\scriptsize\bfseries, fill=white, inner sep=1pt] {1}
+    node[pos=0.85, above=2pt, font=\scriptsize\bfseries, fill=white, inner sep=1pt] {0..*}
+    node[midway, above=2pt, font=\tiny\bfseries, fill=white, inner sep=1.5pt] {génère audit};
+
+  \draw[rel, dashed, ->, >=stealth] (model.east) -- (drift.west)
+    node[midway, above=2pt, font=\tiny\bfseries\color{itgateaccent}, fill=white, inner sep=1.5pt] {\guillemotleft contrôle distribution\guillemotright};
+
+  \draw[rel, dashed, ->, >=stealth] (model.north east) -- (log.south west)
+    node[midway, sloped, above=2pt, font=\tiny\bfseries, fill=white, inner sep=1.5pt] {\guillemotleft trace inférence\guillemotright};
+\end{tikzpicture}%
+}
+\caption{Diagramme de classes global de la plateforme MLOps ITGate}
+\label{fig:uml_class_global}
+\end{figure}
+
+\subsection{Diagrammes de Séquence}
+
+\subsubsection{Diagramme de Séquence : Authentification Sécurisée JWT}
+La figure~\ref{fig:seq_auth} illustre le protocole d'échange d'identifiants et de délivrance du jeton d'accès sécurisé.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.97\textwidth}{!}{%
+\begin{tikzpicture}[
+  lifeline/.style={draw=itgateblue!55, dashed, thick},
+  head/.style={rectangle, draw=itgateblue, fill=white, rounded corners=3pt,
+    minimum width=3.0cm, minimum height=0.8cm, text centered, font=\scriptsize\bfseries, align=center, drop shadow},
+  msg/.style={thick, ->, >=stealth, color=itgateblue},
+  ret/.style={thick, dashed, ->, >=stealth, color=itgatesecondary}
+]
+  \node[head, fill=umluser, text=white]    (c)    at (0.0,  0) {Client React};
+  \node[head, fill=umlconv, text=white]    (api)  at (5.0,  0) {FastAPI (/token)};
+  \node[head, fill=umldoc, text=white]     (auth) at (10.0, 0) {Auth Engine};
+  \node[head, fill=itgatedark, text=white] (db)   at (15.0, 0) {SQLite Database};
+
+  \foreach \x in {0.0,5.0,10.0,15.0} {
+    \draw[lifeline] (\x, -0.4) -- (\x, -6.6);
+  }
+
+  \draw[msg]  (0.0, -1.3) -- (5.0,  -1.3)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {1. POST /token (user, pass)};
+  \draw[msg]  (5.0, -2.2) -- (15.0, -2.2)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {2. SELECT * FROM users WHERE user=?};
+  \draw[ret]  (15.0,-3.1) -- (5.0,  -3.1)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {3. User Record (Hashed Pass)};
+  \draw[msg]  (5.0, -4.0) -- (10.0, -4.0)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {4. verify\_password(plain, hash)};
+  \draw[ret]  (10.0,-4.9) -- (5.0,  -4.9)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {5. True + encode\_jwt(user\_id)};
+  \draw[ret]  (5.0, -5.9) -- (0.0,  -5.9)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {6. 200 OK \{access\_token, bearer\}};
+\end{tikzpicture}%
+}
+\caption{Diagramme de séquence --- Authentification et délivrance du token JWT}
+\label{fig:seq_auth}
+\end{figure}
+
+\subsubsection{Diagrammes de Séquence : Inférence \& Moteur RAG Résilient}
+La figure~\ref{fig:seq_predict_full} détaille l'inférence avec contrôle de Data Drift, tandis que la figure~\ref{fig:seq_rag_full} illustre la bascule résiliente vers les sources FAISS locales.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.97\textwidth}{!}{%
+\begin{tikzpicture}[
+  lifeline/.style={draw=itgateblue!55, dashed, thick},
+  head/.style={rectangle, draw=itgateblue, fill=white, rounded corners=3pt,
+    minimum width=2.8cm, minimum height=0.8cm, text centered, font=\scriptsize\bfseries, align=center, drop shadow},
+  msg/.style={thick, ->, >=stealth, color=itgateblue},
+  ret/.style={thick, dashed, ->, >=stealth, color=itgatesecondary}
+]
+  \node[head, fill=umluser, text=white]    (c)   at (0.0,  0) {Client React};
+  \node[head, fill=umlconv, text=white]    (api) at (3.75, 0) {FastAPI (/predict)};
+  \node[head, fill=umldoc, text=white]     (reg) at (7.5,  0) {Model Registry};
+  \node[head, fill=umlmsg, text=white]     (drf) at (11.25,0) {Drift Engine};
+  \node[head, fill=itgatedark, text=white] (db)  at (15.0, 0) {SQLite ORM};
+
+  \foreach \x in {0.0,3.75,7.5,11.25,15.0} {
+    \draw[lifeline] (\x, -0.4) -- (\x, -7.2);
+  }
+
+  \draw[msg] (0.0,  -1.3) -- (3.75, -1.3)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {1. POST /predict (Payload + JWT)};
+  \draw[msg] (3.75, -2.2) -- (7.5, -2.2)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {2. load\_model("Production")};
+  \draw[ret] (7.5,  -3.1) -- (3.75,-3.1)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {3. RandomForest Artifact};
+  \draw[msg] (3.75, -4.0) -- (11.25,-4.0)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {4. detect\_drift(features)};
+  \draw[ret] (11.25,-4.9) -- (3.75,-4.9)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {5. DriftReport (Z=0.66, normal)};
+  \draw[msg] (3.75, -5.8) -- (15.0,-5.8)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {6. INSERT INTO api\_logs (...)};
+  \draw[ret] (3.75, -6.8) -- (0.0, -6.8)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {7. 200 OK \{pred: 436\,735 TND, drift: 0.66\}};
+\end{tikzpicture}%
+}
+\caption{Diagramme de séquence --- Inférence Séries Temporelles et Contrôle de Dérive}
+\label{fig:seq_predict_full}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\resizebox{0.97\textwidth}{!}{%
+\begin{tikzpicture}[
+  lifeline/.style={draw=itgateblue!55, dashed, thick},
+  head/.style={rectangle, draw=itgateblue, fill=white, rounded corners=3pt,
+    minimum width=2.8cm, minimum height=0.8cm, text centered, font=\scriptsize\bfseries, align=center, drop shadow},
+  msg/.style={thick, ->, >=stealth, color=itgateblue},
+  ret/.style={thick, dashed, ->, >=stealth, color=itgatesecondary}
+]
+  \node[head, fill=umluser, text=white]        (c)     at (0.0,  0) {Client React};
+  \node[head, fill=umlconv, text=white]        (api)   at (3.75, 0) {FastAPI (/ask)};
+  \node[head, fill=umldoc, text=white]         (faiss) at (7.5,  0) {FAISS Store};
+  \node[head, fill=orange!80!black,text=white] (groq)  at (11.25,0) {Groq LPU};
+  \node[head, fill=itgatedark, text=white]     (db)    at (15.0, 0) {SQLite / Metrics};
+
+  \foreach \x in {0.0,3.75,7.5,11.25,15.0} {
+    \draw[lifeline] (\x, -0.4) -- (\x, -7.2);
+  }
+
+  \draw[msg] (0.0,  -1.3) -- (3.75,  -1.3)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {1. POST /ask \{"question": "..."\}};
+  \draw[msg] (3.75, -2.2) -- (7.5, -2.2)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {2. similarity\_search(k=4)};
+  \draw[ret] (7.5, -3.1) -- (3.75, -3.1)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {3. Top-4 Document Chunks};
+  \draw[msg] (3.75, -4.0) -- (11.25, -4.0)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {4. invoke\_chain(context)};
+  \draw[ret, color=red!70!black] (11.25,-4.9) -- (3.75, -4.9)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {5. Error 429 Quota Exceeded};
+  \draw[msg] (3.75, -5.8) -- (15.0, -5.8)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {6. inc(llm\_fallbacks\_total)};
+  \draw[ret] (3.75, -6.8) -- (0.0,  -6.8)
+    node[midway, above=2pt, fill=white, inner sep=2pt, font=\scriptsize] {7. 200 OK \{fallback: true, sources: [...]\}};
+\end{tikzpicture}%
+}
+\caption{Diagramme de séquence --- Processus RAG avec mécanisme de repli résilient}
+\label{fig:seq_rag_full}
+\end{figure}
+
+\section{Conclusion}
+L'étude conceptuelle menée dans ce chapitre a permis de définir formellement le comportement statique et dynamique de la plateforme MLOps. La rigueur des diagrammes UML élaborés constitue la passerelle directe vers la phase d'implémentation technique, qui est l'objet du chapitre suivant.
+
+\newpage
+
+% ====================================================================
+%                  CHAPITRE 3 : RÉALISATION ET DÉPLOIEMENT
+% ====================================================================
+\chapter{Réalisation et Déploiement}
+
+\section{Introduction}
+Ce troisième et dernier chapitre constitue le cœur technique de notre travail. Nous y détaillons l'environnement matériel et logiciel, la stack technologique complète, l'architecture modulaire en 6 couches, la modélisation mathématique sous-jacente au Machine Learning et au Data Drift, les pipelines opérationnels, la présentation visuelle des interfaces développées, et enfin l'évaluation expérimentale appuyée par notre batterie de tests automatisés.
+
+\section{Environnement de Développement et Stack Technologique}
+
+\subsection{Écosystème Technologique Industriel}
+L'ensemble de la plateforme repose sur des briques logicielles open-source de référence industrielle couvrant le Machine Learning, le serving d'API, la conteneurisation, l'orchestration et l'observabilité.
+
+\begin{figure}[H]
+\centering
+\begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=bordergray,
+    arc=3mm,
+    boxrule=0.7pt,
+    left=2mm, right=2mm, top=2.5mm, bottom=2.5mm,
+    shadow={0.8mm}{-0.8mm}{0mm}{black!6}
+]
+\centering
+\begin{tabular}{ccccccccc}
+  \includegraphics[height=1.15cm]{figures/logo_python.png} &
+  \includegraphics[height=1.15cm]{figures/logo_fastapi.png} &
+  \includegraphics[height=1.15cm]{figures/logo_mlflow.png} &
+  \includegraphics[height=1.15cm]{figures/logo_docker.png} &
+  \includegraphics[height=1.15cm]{figures/logo_kubernetes.png} &
+  \includegraphics[height=1.15cm]{figures/logo_prometheus.png} &
+  \includegraphics[height=1.15cm]{figures/logo_grafana.png} &
+  \includegraphics[height=1.15cm]{figures/logo_swagger.png} &
+  \includegraphics[height=1.15cm]{figures/logo_react.png} \\
+  {\scriptsize\bfseries Python} & 
+  {\scriptsize\bfseries FastAPI} & 
+  {\scriptsize\bfseries MLflow} & 
+  {\scriptsize\bfseries Docker} & 
+  {\scriptsize\bfseries K8s} & 
+  {\scriptsize\bfseries Prometheus} & 
+  {\scriptsize\bfseries Grafana} & 
+  {\scriptsize\bfseries Swagger} & 
+  {\scriptsize\bfseries React.js}
+\end{tabular}
+\end{tcolorbox}
+\vspace{-0.25cm}
+\caption{Principales technologies et frameworks déployés sur la plateforme MLOps}
+\label{fig:tech_stack_logos}
+\end{figure}
+
+\subsection{Stack Technologique Détaillée}
+Le tableau~\ref{tab:tech_stack_master} présente une synthèse exhaustive des briques technologiques mises en œuvre au sein de la plateforme MLOps.
+
+\begin{table}[H]
+\centering
+\small
+\rowcolors{2}{itgatelight}{white}
+\begin{tabularx}{\textwidth}{@{}lllX@{}}
+\toprule
+\textbf{Couche Système} & \textbf{Technologie} & \textbf{Version} & \textbf{Rôle et Justification Industrielle} \\ \midrule
+\textbf{Langage Backend} & Python & 3.11 & Standard de référence de l'écosystème IA et Data Science. \\
+\textbf{Framework API} & FastAPI & 0.115 & Serveur REST asynchrone ultra-rapide avec validation Pydantic. \\
+\textbf{Serveur ASGI} & Uvicorn & 0.30 & Serveur web asynchrone haute performance basé sur \texttt{uvloop}. \\
+\textbf{Gouvernance ML} & MLflow & 2.15 & Suivi des expériences et gestion centralisée du Model Registry. \\
+\textbf{Modélisation ML} & Scikit-Learn & 1.5 & Algorithme Random Forest Regressor pour séries temporelles. \\
+\textbf{Embeddings RAG} & Sentence-Transformers & 3.0 & Modèle pré-entraîné local \texttt{all-MiniLM-L6-v2} (384 dim). \\
+\textbf{Index Vectoriel} & FAISS & 1.8 & Moteur vectoriel local haute vitesse en mémoire vive (C++). \\
+\textbf{Inférence Cloud} & Groq LPU SDK & 0.9 & Accélérateur d'inférence ultra-rapide pour modèles LLaMA-3. \\
+\textbf{Framework Frontend} & React.js / Vite & 18.3 & Interface web réactive avec rendu vectoriel SVG temps réel. \\
+\textbf{Conteneurisation} & Docker & 26.1 & Build multi-stage léger et exécution sous utilisateur non-root. \\
+\textbf{Orchestration} & Kubernetes (K8s) & 1.30 & Déploiement résilient, autoscaling HPA et probes découplées. \\
+\textbf{Observabilité} & Prometheus & 2.52 & Collecte et stockage des séries temporelles de métriques HTTP et drift. \\
+\textbf{Visualisation} & Grafana & 10.4 & Tableaux de bord de supervision opérationnelle provisionnés. \\
+\textbf{Continuous Delivery} & ArgoCD & 2.11 & Déploiement déclaratif et réconciliation automatique GitOps. \\
+\textbf{Intégration Continue} & GitHub Actions & v4 & Pipeline CI validant les tests unitaires et le build OCI. \\ \bottomrule
+\end{tabularx}
+\caption{Stack technologique détaillée de la plateforme MLOps ITGate V3.1}
+\label{tab:tech_stack_master}
+\end{table}
+
+\newpage
+\section{Architecture Globale en 6 Couches}
+La figure~\ref{fig:arch_6_layers} illustre l'organisation en 6 couches modulaires interconnectées garantissant une séparation stricte des responsabilités.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=0.45cm,
+  layer/.style={rectangle, draw=itgateblue, fill=itgatelight, rounded corners=4pt,
+    minimum width=\linewidth, minimum height=0.95cm, text centered,
+    font=\small\bfseries, text width=0.94\linewidth, align=center, drop shadow},
+  arrow/.style={thick, ->, >=stealth, color=itgateaccent, line width=1.3pt}
+]
+  \node[layer, fill=itgateblue!15!white] (l1)
+    {\color{itgateblue}\textbf{[1. COUCHE ML \& REGISTRY]}\quad
+     \normalfont\small Scikit-Learn (Time Series) + MLflow Model Registry (Stage Production)};
+  \node[layer, fill=itgatesecondary!10!white, below=of l1] (l2)
+    {\color{itgatesecondary}\textbf{[2. COUCHE SERVING \& API]}\quad
+     \normalfont\small FastAPI Asynchrone, Sécurité JWT, Fallback Engine, SQLite / SQLAlchemy};
+  \node[layer, fill=itgateaccent!10!white, below=of l2] (l3)
+    {\color{itgateaccent!80!black}\textbf{[3. COUCHE EMPAQUETAGE]}\quad
+     \normalfont\small \mbox{Docker Multi-Stage} (Build Node 22 $\rightarrow$ Runtime Python 3.11 Non-Root)};
+  \node[layer, fill=itgateblue!10!white, below=of l3] (l4)
+    {\color{itgateblue}\textbf{[4. COUCHE ORCHESTRATION CLOUD]}\quad
+     \normalfont\small \mbox{Kubernetes} (Deployment, Service, ConfigMap, Secrets, HPA Autoscaler)};
+  \node[layer, fill=itgatesecondary!8!white, below=of l4] (l5)
+    {\color{itgatesecondary}\textbf{[5. COUCHE OBSERVABILITÉ]}\quad
+     \normalfont\small Prometheus (Scrape Métriques + Drift Z-Score) \& Dashboard Grafana};
+  \node[layer, fill=itgatedark!8!white, below=of l5] (l6)
+    {\color{itgatedark}\textbf{[6. COUCHE GITOPS \& CI/CD]}\quad
+     \normalfont\small \mbox{GitHub Actions Workflow} \& ArgoCD Continuous Deployment};
+
+  \draw[arrow] (l1.south) -- (l2.north);
+  \draw[arrow] (l2.south) -- (l3.north);
+  \draw[arrow] (l3.south) -- (l4.north);
+  \draw[arrow] (l4.south) -- (l5.north);
+  \draw[arrow] (l5.south) -- (l6.north);
+\end{tikzpicture}
+\caption{Architecture technique modulaire en 6 couches de la plateforme MLOps}
+\label{fig:arch_6_layers}
+\end{figure}
+
+\section{Modélisation Mathématique et Algorithmique}
+
+\subsection{Prévision du Chiffre d'Affaires par Séries Temporelles Multi-variées}
+Pour modéliser l'évolution du Chiffre d'Affaires $\hat{Y}_{t+1}$ au mois futur $t+1$, le système utilise un ensemble de régresseurs par forêts aléatoires (\textit{Random Forest}) combinant des variables opérationnelles exogènes et des composantes autorégressives (lags temporels).
+
+Le vecteur d'entrée à l'instant $t$ est défini par :
+\begin{equation}
+    X_t = \Big[ N_{\text{ing}}(t), \, N_{\text{proj}}(t), \, V_{\text{cont}}(t), \, Y_{t-1}, \, Y_{t-2}, \, Y_{t-3} \Big]^T
+\end{equation}
+où :
+\begin{itemize}[nosep]
+    \item $N_{\text{ing}}(t)$ : Nombre d'ingénieurs et consultants actifs en mission.
+    \item $N_{\text{proj}}(t)$ : Nombre de projets clients en cours de développement.
+    \item $V_{\text{cont}}(t)$ : Valeur moyenne facturée par contrat (en TND).
+    \item $Y_{t-1}, Y_{t-2}, Y_{t-3}$ : Chiffre d'affaires réalisé aux mois $M-1, M-2, M-3$.
+\end{itemize}
+
+La prédiction agrégée issue des $B$ arbres de décision de la forêt s'écrit :
+\begin{equation}
+    \hat{Y}_{t+1} = \frac{1}{B} \sum_{b=1}^{B} T_b\Big(X_t ; \Theta_b\Big)
+\end{equation}
+où $T_b(X_t ; \Theta_b)$ représente la prédiction du $b$-ième arbre paramétré par $\Theta_b$.
+
+\subsection{Détection Statistique de Data Drift ($Z$-Score)}
+Pour détecter toute anomalie de distribution dans les données de production sans nécessiter un calcul lourd de distance de Wasserstein en ligne, le module \texttt{src/drift.py} calcule le score d'écart standardisé ($Z$-score) pour chaque variable $j$ par rapport au profil statistique de référence d'entraînement $(\mu_j, \sigma_j)$ :
+\begin{equation}
+    z_j = \left| \frac{x_j - \mu_j}{\sigma_j} \right|
+\end{equation}
+Le score global de dérive associé à une requête est défini par le supremum :
+\begin{equation}
+    Z_{\text{max}} = \max_{j \in \{1,\dots,d\}} z_j
+\end{equation}
+Le système applique la règle de décision suivante :
+\begin{equation}
+    \text{Statut Drift} = 
+    \begin{cases} 
+        \text{\textbf{NORMAL}} & \text{si } Z_{\text{max}} \le 2.5 \\ 
+        \text{\textbf{DÉRIVE DÉTECTÉE (ALERTE)}} & \text{si } Z_{\text{max}} > 2.5 
+    \end{cases}
+\end{equation}
+Ce score est exposé sous forme de jauge Prometheus (\texttt{mlops\_data\_drift\_score}) et déclenche un bandeau d'alerte visuel rouge sur le tableau de bord React.
+
+\section{Pipelines Opérationnels MLOps et RAG}
+
+\subsection{Gouvernance MLflow et Model Registry}
+L'entraînement du modèle via \texttt{src/train.py} enregistre automatiquement les hyperparamètres (\texttt{n\_estimators}, \texttt{max\_depth}), les métriques de validation ($R^2$, RMSE, MAE) et sérialise le modèle sous le nom \texttt{ITGate\_Revenue\_Model}. 
+
+La figure~\ref{fig:mlflow_registry} illustre la gouvernance centralisée dans le \textbf{MLflow Model Registry}, avec la version 1 promue en stage \texttt{Production}.
+
+\begin{figure}[H]
+\centering
+\begin{imgframe}
+  \includegraphics[width=\linewidth]{figures/mlflow_registry.png}
+\end{imgframe}
+\caption{Gouvernance et traçabilité dans le MLflow Model Registry (Modèle \texttt{ITGate\_Revenue\_Model})}
+\label{fig:mlflow_registry}
+\end{figure}
+
+\subsection{Pipeline RAG Documentaire avec Dégradation Contrôlée}
+Le tableau~\ref{tab:rag_steps_detail} détaille les étapes opérationnelles du pipeline RAG documentaire.
+
+\begin{table}[H]
+\centering
+\small
+\rowcolors{2}{itgatelight}{white}
+\begin{tabularx}{\textwidth}{@{}cp{3.2cm}p{3.8cm}X@{}}
+\toprule
+\textbf{Étape} & \textbf{Phase Opérationnelle} & \textbf{Composant / Outil} & \textbf{Détail du Traitement Effectué} \\ \midrule
+1 & Ingestion \& Découpage & \texttt{\small RecursiveCharacterSplitter} & Découpage des fichiers TXT ITGate en blocs de 500 caractères avec chevauchement de 50 caractères. \\
+2 & Encodage Vectoriel & \texttt{all-MiniLM-L6-v2} & Transformation locale de chaque bloc textuel en vecteur dense de dimension 384. \\
+3 & Indexation Vectorielle & \textbf{FAISS IndexFlatL2} & Construction et indexation de la structure de recherche euclidienne locale. \\
+4 & Recherche Sémantique & FAISS Similarity Search & Extraction des $k=4$ segments les plus pertinents correspondant à la question posée. \\
+5 & Synthèse LLM Cloud & \textbf{Groq LPU (LLaMA-3)} & Génération d'une réponse sourcée en streaming haute vitesse ($<400\text{ ms}$). \\
+6 & Dégradation Contrôlée & Graceful Fallback Engine & En cas de panne Groq ou de dépassement de quota, renvoi immédiat des fragments FAISS avec indicateur \texttt{fallback: true}. \\ \bottomrule
+\end{tabularx}
+\caption{Étapes du pipeline RAG documentaire hybride et résilient}
+\label{tab:rag_steps_detail}
+\end{table}
+
+\section[Présentation des Interfaces]{Présentation des Interfaces et Démonstration}
+Cette section présente les captures d'écran réelles issues de l'exécution de la plateforme MLOps.
+
+\subsection{Documentation Swagger UI et Interface de Connexion}
+L'ensemble des routes de l'API REST est formalisé et testable via l'interface Swagger UI (figure~\ref{fig:swagger_ui}). L'accès à la console web est protégé par une mire de connexion JWT OAuth2.
+
+\begin{figure}[H]
+\centering
+\begin{imgframe}
+  \includegraphics[width=\linewidth]{figures/swagger_ui.png}
+\end{imgframe}
+\caption{Documentation interactive Swagger UI de l'API REST FastAPI}
+\label{fig:swagger_ui}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{minipage}[t]{0.42\textwidth}
+  \centering
+  \begin{imgframe}
+    \includegraphics[width=\linewidth]{figures/ui_login.png}
+  \end{imgframe}
+  \caption{Mire de connexion JWT sécurisée}
+  \label{fig:ui_login}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.55\textwidth}
+  \centering
+  \begin{imgframe}
+    \includegraphics[width=\linewidth]{figures/ui_dashboard.png}
+  \end{imgframe}
+  \caption{Tableau de bord de supervision générale}
+  \label{fig:ui_dashboard}
+\end{minipage}
+\end{figure}
+
+\subsection{Prévision du Chiffre d'Affaires et Surveillance du Data Drift}
+La console de prévision interactive permet d'ajuster les variables opérationnelles et d'observer en direct l'impact sur le Chiffre d'Affaires et le score de Data Drift. 
+
+La figure~\ref{fig:ui_forecast_nominal} montre l'inférence en régime nominal ($Z = 0.66 \le 2.5$, statut \textbf{NORMAL}). La figure~\ref{fig:ui_drift_alert} démontre la détection instantanée d'une anomalie lors de l'injection d'effectifs extrêmes ($Z = 36.83 > 2.5$, statut \textbf{ALERTE DÉRIVE DÉTECTÉE}).
+
+\begin{figure}[H]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+  \centering
+  \begin{imgframe}
+    \includegraphics[width=\linewidth]{figures/ui_forecast_nominal.png}
+  \end{imgframe}
+  \caption{Prévision nominale : Statut normal ($Z=0.66$)}
+  \label{fig:ui_forecast_nominal}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+  \centering
+  \begin{imgframe}
+    \includegraphics[width=\linewidth]{figures/ui_drift_alert.png}
+  \end{imgframe}
+  \caption{Détection de Data Drift : Alerte ($Z=36.83$)}
+  \label{fig:ui_drift_alert}
+\end{minipage}
+\end{figure}
+
+\subsection{Console RAG Documentaire}
+La figure~\ref{fig:ui_rag_console} présente l'interface de l'assistant documentaire RAG, permettant aux collaborateurs d'interroger la base de connaissance ITGate en langage naturel. La réponse est générée en streaming par Groq LPU, avec indication automatique du statut (nominal ou fallback FAISS).
+
+\begin{figure}[H]
+\centering
+\begin{imgframe}
+  \includegraphics[width=0.85\linewidth]{figures/ui_rag.png}
+\end{imgframe}
+\caption{Console RAG documentaire : interrogation de la base de connaissance ITGate}
+\label{fig:ui_rag_console}
+\end{figure}
+
+\subsection{Supervision Avancée : Grafana et Prometheus}
+La plateforme intègre une pile d'observabilité complète. La figure~\ref{fig:grafana_dashboard} présente le tableau de bord Grafana temps réel avec les courbes de débit HTTP, les latences d'inférence, le suivi des fallbacks LLM et la jauge de dérive statistique. La figure~\ref{fig:prometheus_targets} valide l'état opérationnel (\texttt{UP}) du point de collecte \texttt{/metrics} sous Prometheus.
+
+\begin{figure}[H]
+\centering
+\begin{imgframe}
+  \includegraphics[width=\linewidth]{figures/grafana_dashboard.png}
+\end{imgframe}
+\caption{Tableau de bord Grafana d'observabilité temps réel de la plateforme MLOps}
+\label{fig:grafana_dashboard}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+  \centering
+  \begin{imgframe}
+    \includegraphics[width=\linewidth]{figures/prometheus_targets.png}
+  \end{imgframe}
+  \caption{Statut opérationnel de la sonde Prometheus}
+  \label{fig:prometheus_targets}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+  \centering
+  \begin{imgframe}
+    \includegraphics[width=\linewidth]{figures/ui_observability.png}
+  \end{imgframe}
+  \caption{Console d'observabilité intégrée React}
+  \label{fig:ui_observability}
+\end{minipage}
+\end{figure}
+
+\subsection{Déploiement Kubernetes et Pipelines CI/CD}
+La figure~\ref{fig:ui_deployment_k8s} présente l'écran de déploiement de la console React, affichant l'état des pods Kubernetes, les configurations d'auto-scaling (HPA) et le statut du pipeline ArgoCD GitOps.
+
+\begin{figure}[H]
+\centering
+\begin{imgframe}
+  \includegraphics[width=0.85\linewidth]{figures/ui_deployment_k8s.png}
+\end{imgframe}
+\caption{Console de déploiement Kubernetes avec état des pods et pipeline ArgoCD}
+\label{fig:ui_deployment_k8s}
+\end{figure}
+
+\section{Validation Expérimentale et Benchmarking}
+
+\subsection{Évaluation Quantitative du Modèle de Séries Temporelles}
+Le modèle \textit{RandomForestRegressor} a été évalué sur l'année de test 2023 (12 mois glissants) n'ayant pas servi à l'apprentissage. Le tableau~\ref{tab:benchmarks_final} synthétise les performances observées.
+
+\begin{table}[H]
+\centering
+\small
+\rowcolors{2}{itgatelight}{white}
+\begin{tabularx}{\textwidth}{@{}p{3.8cm}p{4.2cm}cc@{}}
+\toprule
+\textbf{Métrique Évaluée} & \textbf{Définition Mathématique} & \textbf{Valeur Observée} & \textbf{Interprétation} \\ \midrule
+\textbf{Coefficient $R^2$} & $1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2}$ & \textbf{0.942} & Excellente corrélation ($>94\,\%$) \\
+\textbf{Erreur Quadratique (RMSE)} & $\sqrt{\frac{1}{n} \sum (y_i - \hat{y}_i)^2}$ & \textbf{24\,025 TND} & Écart type d'erreur très faible \\
+\textbf{Erreur Absolue (MAE)} & $\frac{1}{n} \sum |y_i - \hat{y}_i|$ & \textbf{22\,305 TND} & Conforme aux tolérances financières \\
+\textbf{Latence \texttt{POST /predict}} & Temps d'exécution serveur (P95) & \textbf{1.24 ms} & Inférence instantanée \\
+\textbf{Latence \texttt{POST /ask}} & Temps d'exécution RAG complet & \textbf{380.5 ms} & Génération fluide et réactive \\
+\textbf{Couverture des Tests} & Taux de succès sous \texttt{pytest} & \textbf{27 / 27 (100\,\%)} & Validation CI/CD sans régression \\ \bottomrule
+\end{tabularx}
+\caption{Synthèse des benchmarks de performance algorithmique et logicielle}
+\label{tab:benchmarks_final}
+\end{table}
+
+\section{Conclusion}
+Ce troisième chapitre a démontré l'aboutissement technique complet de la plateforme MLOps V3.1. Les choix d'ingénierie logicielle (FastAPI, MLflow Model Registry, FAISS, Docker, Kubernetes, Prometheus, React) combinés à une modélisation rigoureuse garantissent une plateforme industrielle robuste, maintenable et immédiatement opérationnelle.
+
+\newpage
+
+% ====================================================================
+%                       CONCLUSION GÉNÉRALE ET PERSPECTIVES
+% ====================================================================
+\chapter*{Conclusion Générale et Perspectives}
+\addcontentsline{toc}{chapter}{Conclusion Générale et Perspectives}
+\markboth{Conclusion Générale et Perspectives}{Conclusion Générale et Perspectives}
+
+Ce stage d'immersion ingénieur d'un mois effectué au sein d'\textbf{ITGate Group} a permis de concevoir, implémenter, tester et déployer avec succès une \textbf{plateforme MLOps industrielle de bout en bout} (Version 3.1 Production-Ready). Ce projet démontre de manière concrète l'apport décisif de la convergence entre la Data Science, le développement logiciel moderne et les architectures Cloud-Native.
+
+\begin{focusbox}[Bilan des Réalisations Techniques Majeures]
+Au cours de ce stage, l'ensemble des objectifs fixés a été pleinement accompli :
+\begin{itemize}[leftmargin=0.5cm, itemsep=0.5pt, topsep=1pt]
+    \item Conception et validation d'un modèle prédictif de Chiffre d'Affaires par \textbf{Séries Temporelles Multi-variées} atteignant un score $R^2 = 0.942$.
+    \item Mise en place d'une gouvernance rigoureuse du cycle de vie via le \textbf{MLflow Model Registry} avec promotion automatique en stage \texttt{Production} et chargement dynamique sans interruption.
+    \item Intégration d'un moteur d'IA générative \textbf{RAG documentaire} hybride combinant recherche vectorielle locale (FAISS) et accélération cloud (Groq LPU) avec dégradation contrôlée (\textit{fallback}).
+    \item Implémentation d'un module d'alerte en temps réel sur la qualité de la donnée via la détection statistique de \textbf{Data Drift ($Z$-score)} reliée à \textbf{Prometheus} et \textbf{Grafana}.
+    \item Conteneurisation \textbf{Docker multi-stage}, orchestration \textbf{Kubernetes} avec sondes de santé découplées (\texttt{/live}, \texttt{/ready}), autoscaling (HPA) et livraison continue \textbf{GitOps avec ArgoCD}.
+    \item Élaboration d'une console web moderne en \textbf{React.js (Vite)} respectant l'identité visuelle d'ITGate Group avec visualisations vectorielles interactives.
+\end{itemize}
+\end{focusbox}
+
+\section*{Apports Personnels et Professionnels}
+Sur le plan académique et personnel, cette expérience a constitué une transition particulièrement enrichissante entre les enseignements théoriques fondamentaux dispensés durant mon cycle préparatoire à l'\textbf{École Polytechnique de Sousse} et les exigences du monde professionnel de l'ingénierie logicielle.
+
+Ce projet m'a permis de maîtriser des technologies de pointe indispensables à un futur ingénieur (Docker, Kubernetes, MLflow, FastAPI, React, Prometheus/Grafana, ArgoCD), tout en développant une rigueur méthodologique dans l'organisation du code, la gestion des tests automatisés et la rédaction technique.
+
+Cette immersion a également confirmé mon vif intérêt pour les domaines du MLOps, du Cloud Computing et du génie logiciel. Je tiens à réitérer mon profond enthousiasme et ma disponibilité pour poursuivre cette fructueuse collaboration avec \textbf{ITGate Group} lors de mes prochains stages de cycle ingénieur ou dans le cadre de futurs projets technologiques.
+
+\section*{Perspectives d'Évolution Futures}
+Pour prolonger ce travail et enrichir encore la plateforme, plusieurs perspectives d'évolution sont envisagées :
+\begin{enumerate}[leftmargin=0.8cm, itemsep=0.5pt, topsep=1pt]
+    \item \textbf{Continuous Training (CT) Entièrement Automatisé :} Mettre en place un webhook reliant l'alerte de Data Drift sous Prometheus au déclenchement automatique d'un pipeline de réentraînement sous Kubeflow Pipelines ou GitHub Actions.
+    \item \textbf{Modèles de Deep Learning Temporel Avancés :} Évaluer des architectures avancées de type \textit{Temporal Fusion Transformers} (TFT) ou \textit{N-BEATS} pour capturer des saisonnalités financières complexes.
+    \item \textbf{Inférence LLM 100\,\% On-Premise sur Cluster GPU :} Déployer un moteur d'inférence LLM local distribué (via vLLM) sur des serveurs équipés de GPU dédiés pour garantir une confidentialité totale des documents sensibles.
+\end{enumerate}
+
+\newpage
+
+% ====================================================================
+%                       ANNEXES TECHNIQUES
+% ====================================================================
+\appendix
+
+\chapter{Manifestes d'Orchestration Kubernetes \& GitOps}
+
+\section[Manifeste Déploiement Kubernetes]{Manifeste de Déploiement Kubernetes avec Sondes Découplées (\texttt{k8s/deployment.yaml})}
+\begin{lstlisting}[language=SQL, caption={Extrait du manifeste Deployment Kubernetes avec sondes liveness et readiness}]
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-inference-deployment
+  labels:
+    app: ml-inference
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ml-inference
+  template:
+    metadata:
+      labels:
+        app: ml-inference
+    spec:
+      containers:
+      - name: ml-inference-api
+        image: ghcr.io/hamzakh86/mlops-plateforme:latest
+        ports:
+        - containerPort: 8000
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+\end{lstlisting}
+
+\section[Manifeste ArgoCD GitOps]{Manifeste de Déploiement Continu ArgoCD (\texttt{k8s/argocd/application.yaml})}
+\begin{lstlisting}[language=SQL, caption={Manifeste de l'Application ArgoCD pour la synchronisation continue GitOps}]
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: itgate-mlops-platform
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/hamzakh86/mlops-plateforme.git'
+    targetRevision: HEAD
+    path: k8s
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+\end{lstlisting}
+
+\chapter{Dictionnaire des Données du Chiffre d'Affaires ITGate}
+
+\begin{table}[htbp]
+\centering
+\small
+\rowcolors{2}{itgatelight}{white}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{Nom de Variable} & \textbf{Type de Donnée} & \textbf{Description et Rôle Économique Métier} \\ \midrule
+\texttt{date} & Date (AAAA-MM) & Période mensuelle d'enregistrement (48 mois d'historique 2020-2023). \\
+\texttt{num\_engineers} & Entier & Nombre total d'ingénieurs et consultants ITGate actifs en mission. \\
+\texttt{active\_projects} & Entier & Nombre de projets logiciels et d'accompagnement Cloud en cours. \\
+\texttt{avg\_contract\_value} & Réel (TND) & Montant moyen facturé par contrat client actif. \\
+\texttt{lag\_1} & Réel (TND) & Chiffre d'Affaires réalisé au mois précédent ($M-1$). \\
+\texttt{lag\_2} & Réel (TND) & Chiffre d'Affaires réalisé au mois $M-2$. \\
+\texttt{lag\_3} & Réel (TND) & Chiffre d'Affaires réalisé au mois $M-3$. \\
+\texttt{revenue} (Cible $Y$) & Réel (TND) & Chiffre d'Affaires global généré par ITGate Group (Variable à prédire). \\ \bottomrule
+\end{tabularx}
+\caption{Dictionnaire des variables du dataset \texttt{itgate\_revenue\_multivariate.csv}}
+\label{tab:dict_data}
+\end{table}
+
+\newpage
+
+% ====================================================================
+%                       BIBLIOGRAPHIE ET WEBOGRAPHIE
+% ====================================================================
+\begin{thebibliography}{99}
+\addcontentsline{toc}{chapter}{Bibliographie et Webographie}
+\markboth{Bibliographie et Webographie}{Bibliographie et Webographie}
+
+\bibitem{itgate} ITGate Group. \emph{Site officiel d'ITGate Group : Solutions logicielles, Cloud \& Intelligence Artificielle}, 2026. \url{https://www.itgate-group.com}
+
+\bibitem{mlops_book} M. Treveil et al. \emph{Introducing MLOps: How to Scale Machine Learning in the Enterprise}. O'Reilly Media, 2020. ISBN: 978-1492083290.
+
+\bibitem{sculley_debt} D. Sculley et al. \emph{Hidden Technical Debt in Machine Learning Systems}. Advances in Neural Information Processing Systems (NeurIPS), 2015.
+
+\bibitem{mlflow_paper} M. Zaharia et al. \emph{Accelerating the Machine Learning Lifecycle with MLflow}. IEEE Data Engineering Bulletin, 2018.
+
+\bibitem{rag_paper} P. Lewis et al. \emph{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}. Advances in Neural Information Processing Systems (NeurIPS), 2020. \url{https://arxiv.org/abs/2005.11401}
+
+\bibitem{k8s_doc} Kubernetes Authors. \emph{Production-Grade Container Orchestration Documentation: HPA and Probes}, 2026. \url{https://kubernetes.io/docs/}
+
+\bibitem{prometheus_doc} Prometheus Authors. \emph{Prometheus Monitoring System and Time Series Database}, 2026. \url{https://prometheus.io/docs/}
+
+\bibitem{grafana_doc} Grafana Labs. \emph{Grafana: The open observability platform}, 2026. \url{https://grafana.com/docs/}
+
+\bibitem{fastapi_doc} S. Ramírez. \emph{FastAPI Framework, high performance, easy to learn, fast to code, ready for production}, 2026. \url{https://fastapi.tiangolo.com/}
+
+\bibitem{argocd_doc} Argo Project. \emph{ArgoCD: Declarative GitOps Continuous Delivery for Kubernetes}, 2026. \url{https://argo-cd.readthedocs.io/}
+
+\bibitem{sklearn_rf} Scikit-Learn. \emph{Ensemble methods: Random Forests and Extratrees}, 2026. \url{https://scikit-learn.org/stable/modules/ensemble.html}
+
+\bibitem{douzette_drift} L. Douzette. \emph{Comprendre et détecter le Data Drift dans les architectures MLOps en production}. Towards Data Science, 2023.
+
+\end{thebibliography}
+
+\end{document}

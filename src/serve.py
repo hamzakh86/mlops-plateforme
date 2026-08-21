@@ -84,6 +84,7 @@ class PredictResponse(BaseModel):
     predictions:  List[float]
     model_run_id: str
     duration_ms:  float
+    drift:        dict = Field(default_factory=dict, description="Rapport de Data Drift")
 
 class AskRequest(BaseModel):
     question: str = Field(
@@ -329,7 +330,12 @@ def predict(request: PredictRequest, req: Request, current_user: User = Depends(
         
         duration_ms = (time.perf_counter() - start) * 1000
         log_request(db, current_user.id, "/predict", "OK", "Termine", duration_ms)
-        return PredictResponse(predictions=results, model_run_id=_model_info.get("run_id", "inconnu"), duration_ms=round(duration_ms, 2))
+        return PredictResponse(
+            predictions=results,
+            model_run_id=_model_info.get("run_id", "inconnu"),
+            duration_ms=round(duration_ms, 2),
+            drift=drift_report
+        )
     except Exception as e:
         log_request(db, current_user.id, "/predict", "Erreur", str(e), 0)
         raise HTTPException(status_code=422, detail=f"Erreur de prédiction : {str(e)}")
