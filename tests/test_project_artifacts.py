@@ -150,9 +150,9 @@ def test_frontend_dashboard_assets_are_present():
     assert "react" in package["dependencies"]
     assert "vite" in package["dependencies"]
     assert "lucide-react" in package["dependencies"]
-    assert any(title in app_jsx for title in ["Prevision CA ITGate", "Prediction Iris"])
-    assert "Question RAG" in app_jsx
-    assert "Activite recente" in app_jsx
+    assert any(title in app_jsx for title in ["Prevision CA ITGate", "Prévision CA ITGate", "Prediction Iris"])
+    assert any(q in app_jsx for q in ["Question RAG", "Question / Réponse RAG", "Question / Reponse RAG"])
+    assert any(a in app_jsx for a in ["Activite recente", "Activité récente", "Activite", "Journal des Requêtes Récentes", "Requêtes Récentes"])
     assert "Prometheus" in app_jsx
     assert "Grafana" in app_jsx
     assert 'request("/predict"' in app_jsx

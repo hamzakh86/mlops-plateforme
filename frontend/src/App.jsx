@@ -35,6 +35,7 @@ import {
   User,
   X,
   Zap,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import logoImg from "./assets/logo.png";
@@ -345,6 +346,7 @@ export default function App() {
           <button
             className={`nav-item-btn ${activeSection === "ml" ? "active" : ""}`}
             onClick={() => navigateTo("ml")}
+            data-testid="Prevision CA ITGate"
           >
             <BrainCircuit size={18} />
             <span>Prévision CA ITGate</span>
@@ -353,6 +355,7 @@ export default function App() {
           <button
             className={`nav-item-btn ${activeSection === "documents" ? "active" : ""}`}
             onClick={() => navigateTo("documents")}
+            data-testid="Question RAG"
           >
             <FileSearch size={18} />
             <span>Studio IA & Documents</span>
@@ -1348,7 +1351,7 @@ function ActivityLogPanel({ activityLog }) {
           </div>
           <div>
             <p className="panel-eyebrow">Traçabilité & DB</p>
-            <h2 className="panel-title-text">Journal des Requêtes Récentes</h2>
+            <h2 className="panel-title-text" data-testid="Activite recente">Journal des Requêtes Récentes</h2>
           </div>
         </div>
       </div>

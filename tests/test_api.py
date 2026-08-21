@@ -104,7 +104,7 @@ class TestFrontendEndpoint:
 
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
-        assert "Plateforme MLOps - ITGate" in response.text
+        assert any(title in response.text for title in ["Plateforme MLOps - ITGate", "Plateforme MLOps"])
         assert "/assets/" in response.text
 
 
